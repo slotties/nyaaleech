@@ -1,0 +1,12 @@
+{
+  "name": "nyaaleech",
+  "version": "1.0",
+  "description": "Anime torrents from nyaa.eu",
+  "browser_action": {
+    "default_icon": "icon.png",
+	"popup": "nyaaleech.html"
+  },
+  "permissions": [
+    "http://www.nyaa.eu/", "tabs"
+  ]
+}
