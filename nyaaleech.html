@@ -1,7 +1,7 @@
 <script>
 var CONFIG = {
 	maxNext: 3,
-	maxLatest: 10,
+	maxLatest: 15,
 	
 	animes: [
 		{
@@ -132,7 +132,7 @@ function parseAnime(item, exp) {
 function insertSorted(title, root, el) {
 	for (var i = 0; i < root.childNodes.length; i++) {
 		var c = root.childNodes[i];
-		if (c.nodeType === 1 && c.className === 'anime') {
+		if (c.nodeType === 1 && c.className.indexOf('anime') >= 0) {
 			if (c.querySelector('.title').firstChild.nodeValue > title) {
 				root.insertBefore(el, c);
 				return;
@@ -164,78 +164,89 @@ function appendLink(el, anime) {
 	el.appendChild(a);
 };
 
-function displayAnime(anime) {
+function pullTorrents(anime, el) {
 	var req = new XMLHttpRequest();
 	req.open('GET', 'http://www.nyaa.eu/?page=rss&cats=1_37&term=' + anime.name, true);
 	req.onload = function() {	
 		// console.log(req.responseXML);
-		
-		var bodyEl = document.getElementById('prototype').cloneNode(true);
-		bodyEl.removeAttribute('id');
-		
-		bodyEl.querySelector('.title').innerText = anime.name;
-		
-		var latestEl = bodyEl.querySelector('.latest'),
-			epEl = bodyEl.querySelector('.next'),
+		var latestEl = el.querySelector('.latest'),
+			epEl = el.querySelector('.next'),
 			items = req.responseXML.getElementsByTagName('item');
-
-		// cleanup prototype stuff
-		removeChilds(latestEl);
-		removeChilds(epEl);
 			
-		for (var i = 0; i < items.length; i++) {
+		el.className = el.className.replace(/loading/g, '');
+			
+		for (var i = 0; i < items.length && latestEl.childNodes.length < CONFIG.maxLatest; i++) {
 			var next = parseAnime(items[i], anime);
 			
 			if (isNextEpisode(next, anime) && epEl.childNodes.length < CONFIG.maxNext) {
 				appendLink(epEl, next);
-			} else if (latestEl.childNodes.length < CONFIG.maxLatest) {
-				appendLink(latestEl, next);
 			}
+			
+			appendLink(latestEl, next);
 		}
-					
-		insertSorted(anime.name, document.getElementById('animes'), bodyEl);
 	};
 	req.send(null);
 };
 
-for (var i = 0; i < CONFIG.animes.length; i++) {
-	displayAnime(CONFIG.animes[i]);
-}
+window.onload = function() {
+	var root = document.getElementById('animes'),
+		prot = document.getElementById('prototype');
+		
+	for (var i = 0; i < CONFIG.animes.length; i++) {
+		var el = prot.cloneNode(true),
+			anime = CONFIG.animes[i];
+			
+		el.removeAttribute('id');
+		el.querySelector('.title').innerText = anime.name;
+		
+		// cleanup prototype stuff
+		removeChilds(el.querySelector('.latest'));
+		removeChilds(el.querySelector('.next'));
+		
+		insertSorted(anime.name, root, el);
+		
+		pullTorrents(anime, el);
+	}
+};
 </script>
 <style>
 body {
-  min-width: 600px;
-  overflow-x: hidden;
+	min-width: 600px;
+	overflow-x: hidden;
 }
 
+.anime.loading {
+	color: #ccc;
+}
 .anime {
 	border-bottom: 1px dashed #000;
 	margin-bottom: 8px;
 }
-
 .anime:last-child {
 	border-bottom: none;
 }
 
-.anime .title {
+.title {
 	font-weight: bold;
 }
-.anime .downloads .latest:before {
+
+.downloads .latest:before {
 	content: 'Latest';
 }
-.anime .downloads .next:before {
+.downloads .next:before {
 	content: 'Next';
 }
-.anime .downloads .torrent {
+
+.torrent {
 	margin-left: 8px;
 	text-decoration: none;
 }
 
-.anime .downloads .torrent:hover {
+.torrent:hover {
 	text-decoration: underline;
 }
 
-.anime .downloads .collapsed .torrent {
+.collapsed .torrent {
 	display: none;
 }
 
@@ -245,7 +256,7 @@ body {
 </style>
 
 <body>
-	<div id="prototype" class="anime">
+	<div id="prototype" class="anime loading">
 		<div class="title">Whatever</div>
 		<div class="downloads">
 			<div class="category next">				
