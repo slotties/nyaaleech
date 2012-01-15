@@ -13,7 +13,7 @@ var CONFIG = {
 			filters: [ 'GotWoot', '8-bit' ]
 		},
 		{
-			name: 'Amagami SS Plus', lastEp: 1,
+			name: 'Amagami SS Plus', lastEp: 2,
 			filters: [ 'UTW', '720p' ]
 		},
 		{
@@ -24,7 +24,7 @@ var CONFIG = {
 			name: 'Another', lastEp: 1
 		},
 		{
-			name: 'Ben-To', lastEp: 12,
+			name: 'Ben-to', lastEp: 12,
 			filters: [ 'gg' ]
 		},
 		{
@@ -34,10 +34,10 @@ var CONFIG = {
 			name: 'Brave10', lastEp: 1
 		},
 		{
-			name: 'Daily lives of high school boys', lastEp: 1
+			name: 'Daily Lives of High School Boys', lastEp: 1
 		},
 		{
-			name: 'Kimi to boku', lastEp: 13,
+			name: 'Kimi to Boku', lastEp: 13,
 			filters: [
 				[ 'CTSS' ],
 				[ 'sage' ]
@@ -50,10 +50,6 @@ var CONFIG = {
 	]
 };
 
-function isNextEpisode(title, anime) {
-	return isInteresting(title, anime) && title.indexOf(anime.lastEp + 1) >= 0;
-};
-
 function containsAll(str, r) {
 	if (typeof(r) === 'string')
 		return str.indexOf(r) >= 0;
@@ -63,7 +59,7 @@ function containsAll(str, r) {
 			return false;
 	}
 
-	return true;	
+	return true;
 }
 
 /*
@@ -84,14 +80,53 @@ function filterMatches(str, r) {
 	return false;
 };
 
-
-function isInteresting(title, anime) {
-	return (!anime.filters || filterMatches(title, anime.filters));
+function toggleExpand(el) {
+	if (el.className.indexOf('collapsed') >= 0)
+		el.className = el.className.replace(/collapsed/g, '');
+	else
+		el.className += 'collapsed';
 };
 
-// FIXME: strip hash, normalize (?)
-function stripName(title) {
-	return title.replace(/_/g, ' ');
+
+function isNextEpisode(next, anime) {
+	var nextEp = anime.lastEp + 1;
+	
+	if (isNaN(next.ep)) {
+		if (next.title.indexOf(nextEp) < 0) {
+			return false;
+		}
+	} else if (next.ep !== nextEp) {
+		return false;
+	}
+	
+	return (!anime.filters || filterMatches(next.title, anime.filters));
+};
+
+function parseAnime(item, exp) {
+	var title = item.querySelector('title').firstChild.nodeValue.replace(/_/g, ' '),
+	// var title = item,
+		next = {
+			title: title,
+			xml: item,
+			group: null,
+			ep: Number.NaN
+		};
+	
+	var idx = title.indexOf(exp.name);
+	if (idx >= 0) {
+		// group: [groupName] => remove [, ] and any whitespaces
+		var group = title.substring(0, idx).replace(/[\[\]\s]/g, '');
+		next.group = group;
+		
+		idx += exp.name.length;
+		var epEnd = title.indexOf('[', idx);
+		if (epEnd > 0) {
+			var ep = title.substring(idx, epEnd).replace(/-/g, '');
+			next.ep = parseInt(ep, 10);
+		}
+	}
+	
+	return next;
 };
 
 function insertSorted(title, root, el) {
@@ -117,6 +152,18 @@ function downloadTorrent(e) {
 	chrome.tabs.update(null, { url: url });
 };
 
+function appendLink(el, anime) {
+	var a = document.createElement('a'),
+		url = anime.xml.querySelector('link').firstChild.nodeValue;
+	
+	a.className = 'torrent';
+	a.innerText = anime.title;
+	a.setAttribute('href', url);
+	a.addEventListener('click', downloadTorrent, true);
+				
+	el.appendChild(a);
+};
+
 function displayAnime(anime) {
 	var req = new XMLHttpRequest();
 	req.open('GET', 'http://www.nyaa.eu/?page=rss&cats=1_37&term=' + anime.name, true);
@@ -137,19 +184,13 @@ function displayAnime(anime) {
 		removeChilds(epEl);
 			
 		for (var i = 0; i < items.length; i++) {
-			var title = stripName(items[i].querySelector('title').firstChild.nodeValue),
-				a = document.createElement('a'),
-				url = items[i].querySelector('link').firstChild.nodeValue;
-				
-			a.className = 'torrent';
-			a.innerText = title;
-			a.setAttribute('href', url);
-			a.addEventListener('click', downloadTorrent, true);
-				
-			if (isNextEpisode(title, anime) && epEl.childNodes.length < CONFIG.maxNext)
-				epEl.appendChild(a);
-			else if (latestEl.childNodes.length < CONFIG.maxLatest)
-				latestEl.appendChild(a);
+			var next = parseAnime(items[i], anime);
+			
+			if (isNextEpisode(next, anime) && epEl.childNodes.length < CONFIG.maxNext) {
+				appendLink(epEl, next);
+			} else if (latestEl.childNodes.length < CONFIG.maxLatest) {
+				appendLink(latestEl, next);
+			}
 		}
 					
 		insertSorted(anime.name, document.getElementById('animes'), bodyEl);
@@ -160,13 +201,6 @@ function displayAnime(anime) {
 for (var i = 0; i < CONFIG.animes.length; i++) {
 	displayAnime(CONFIG.animes[i]);
 }
-
-function toggleExpand(el) {
-	if (el.className.indexOf('collapsed') >= 0)
-		el.className = el.className.replace(/collapsed/g, '');
-	else
-		el.className += 'collapsed';
-};
 </script>
 <style>
 body {
