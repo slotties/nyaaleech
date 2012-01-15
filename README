@@ -1,1 +1,9 @@
-TODO
+Everyone knows and loves nyaa.eu. So do I!
+But how to keep track of my beloved anime releases?
+I tracked the specific groups, but that was so much work.
+I tracked baka-updates.com, but they miss some groups sometimes.
+I tracked multiple RSS feeds from nyaa.eu, but there is no search-term combination.
+
+Now I track it using a little chrome extension that pulls the RSS feeds for
+a couple of animes, does some filtering and displays links for the next/latest
+releases.
