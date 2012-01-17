@@ -6,78 +6,44 @@ var CONFIG = {
 	animes: [
 		{
 			name: 'Bleach', lastEp: 355,
-			filters: [ 'Horrible', '720p' ]
+			prefs: /\[HorribleSubs\] Bleach - ([0-9]*)/
 		},
 		{
 			name: 'Mirai Nikki', lastEp: 13,
-			filters: [ 'GotWoot', '8-bit' ]
+			prefs: /\[GotWoot\]_Mirai_Nikki_([0-9]*)/
 		},
 		{
 			name: 'Amagami SS Plus', lastEp: 2,
-			filters: [ 'UTW', '720p' ]
+			prefs: /\[UTW\]_Amagami_SS_Plus_-_([0-9]*)/
 		},
 		{
 			name: 'Ano Natsu de Matteru', lastEp: 1,
-			filters: [ 'Horrible', '720p' ]
+			prefs: /.*Ano Natsu de Matteru - ([0-9]*)/
 		},
 		{
-			name: 'Another', lastEp: 1
+			name: 'Another', lastEp: 1,
+			prefs: /\[HorribleSubs\] Another - ([0-9]*)/
 		},
 		{
-			name: 'Ben-to', lastEp: 12,
-			filters: [ 'gg' ]
+			name: 'Brave10', lastEp: 1,
+			prefs: /\[Hiryuu\] Brave10 ([0-9]*)/
 		},
 		{
-			name: 'Boku Ha Tomodachi Ga Sukunai', lastEp: 12
+			name: 'Daily Lives of High School Boys', lastEp: 1,
+			prefs: /\[sage\]_Daily_Lives_of_High_School_Boys_-_([0-9]*)/
 		},
 		{
-			name: 'Brave10', lastEp: 1
-		},
-		{
-			name: 'Daily Lives of High School Boys', lastEp: 1
-		},
-		{
-			name: 'Kimi to Boku', lastEp: 13,
-			filters: [
-				[ 'CTSS' ],
-				[ 'sage' ]
+			name: 'Kimi to Boku', lastEp: 12,
+			prefs: [
+				/\[CTSS\] Kimi to Boku - ([0-9]*)/,
+				/\[sage\]_Kimi_to_Boku_-_([0-9]*)/
 			]
 		},
 		{
 			name: 'Nisemonogatari', lastEp: 1,
-			filters: 'Horrible'
+			prefs: /\[HorribleSubs\] Nisemonogatari - ([0-9]*) \[1080p\]/
 		}
 	]
-};
-
-function containsAll(str, r) {
-	if (typeof(r) === 'string')
-		return str.indexOf(r) >= 0;
-		
-	for (var i = 0; i < r.length; i++) {
-		if (str.indexOf(r[i]) < 0)
-			return false;
-	}
-
-	return true;
-}
-
-/*
-Valid filters:
-str => must contain str
-[ str1, str2 ] => must contain both str1 and str2
-[ [ str1, str2 ], [ str3, str4 ] ] => Must contain str1 AND str2 OR str3 AND str4
-*/
-function filterMatches(str, r) {
-	if (typeof(r) === 'string' || typeof(r[0]) === 'string')
-		return containsAll(str, r);
-		
-	for (var i = 0; i < r.length; i++) {
-		if (containsAll(str, r[i]))
-			return true;
-	}
-	
-	return false;
 };
 
 function toggleExpand(el) {
@@ -89,41 +55,31 @@ function toggleExpand(el) {
 
 
 function isNextEpisode(next, anime) {
-	var nextEp = anime.lastEp + 1;
-	
-	if (isNaN(next.ep)) {
-		if (next.title.indexOf(nextEp) < 0) {
-			return false;
-		}
-	} else if (next.ep !== nextEp) {
-		return false;
-	}
-	
-	return (!anime.filters || filterMatches(next.title, anime.filters));
+	return (next.ep > anime.lastEp);
 };
 
 function parseAnime(item, exp) {
-	var title = item.querySelector('title').firstChild.nodeValue.replace(/_/g, ' '),
-	// var title = item,
+	var title = item.querySelector('title').firstChild.nodeValue,	
 		next = {
 			title: title,
 			xml: item,
-			group: null,
-			ep: Number.NaN
-		};
+			ep: null
+		},
+		m = null;
 	
-	var idx = title.indexOf(exp.name);
-	if (idx >= 0) {
-		// group: [groupName] => remove [, ] and any whitespaces
-		var group = title.substring(0, idx).replace(/[\[\]\s]/g, '');
-		next.group = group;
-		
-		idx += exp.name.length;
-		var epEnd = title.indexOf('[', idx);
-		if (epEnd > 0) {
-			var ep = title.substring(idx, epEnd).replace(/-/g, '');
-			next.ep = parseInt(ep, 10);
+	if (exp.prefs) {
+		if (exp.prefs.length > 0) {
+			// array
+			for (var i = exp.prefs.length; i-- && !m; ) {
+				m = new RegExp(exp.prefs[i]).exec(title);
+			}
+		} else {
+			m = new RegExp(exp.prefs).exec(title);
 		}
+	}
+	
+	if (m && m.length > 1) {
+		next.ep = m[1];
 	}
 	
 	return next;
@@ -220,7 +176,8 @@ body {
 }
 .anime {
 	border-bottom: 1px dashed #000;
-	margin-bottom: 8px;
+	margin-bottom: 4px;
+	margin-top: 4px;
 }
 .anime:last-child {
 	border-bottom: none;
@@ -259,7 +216,7 @@ body {
 	<div id="prototype" class="anime loading">
 		<div class="title">Whatever</div>
 		<div class="downloads">
-			<div class="category next">				
+			<div class="category next">
 				<a class="torrent" href="http://test">test</a>
 				<a class="torrent" href="http://test">test2</a>
 			</div>
