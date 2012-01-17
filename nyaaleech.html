@@ -1,4 +1,43 @@
+<style>
+body {
+	min-width: 600px;
+	overflow-x: hidden;
+}
+
+.anime.loading {
+	color: #ccc;
+}
+.anime {
+	border-bottom: 1px dashed #000;
+	margin-bottom: 4px;
+	margin-top: 4px;
+}
+.anime:last-child {
+	border-bottom: none;
+}
+
+.title {
+	font-weight: bold;
+}
+.latest .title {
+	cursor: pointer;
+}
+
+.torrent {
+	margin-left: 8px;
+	text-decoration: none;
+}
+
+.torrent:hover {
+	text-decoration: underline;
+}
+
+.collapsed .torrent {
+	display: none;
+}
+</style>
 <script>
+// TODO: add some simple management ui
 var CONFIG = {
 	maxNext: 3,
 	maxLatest: 15,
@@ -46,13 +85,66 @@ var CONFIG = {
 	]
 };
 
+/*
+UI-Library
+*/
+var UI = {};
+
+UI.bindField = function(el, data) {
+	var k = el.getAttribute('bindField'),
+		v = data[k];
+	
+	// substitute render-functions
+	// TODO: test
+	/*if (typeof(v) === 'function')
+		v = v(k, el, data);*/
+	
+	el.innerText = v;
+};
+
+UI.bindFields = function(protEl, data) {
+	if (protEl.hasAttribute('bindScope')) {
+		var binds = protEl.querySelectorAll('[bindScope=' + protEl.getAttribute('bindScope') + ']');
+	} else {
+		var binds = protEl.querySelectorAll('[bindField]');
+	}
+	
+	if (protEl.hasAttribute('bindField'))
+		UI.bindField(protEl, data);
+		
+	for (var i = 0; i < binds.length; i++) {
+		UI.bindField(binds[i], data);
+	}
+};
+
+UI.list = function(data, rootEl, itemPrototypeSelector, conf) {
+	var p = rootEl.querySelector(itemPrototypeSelector),
+		bindScope = p.getAttribute('bindScope');
+		
+	for (var i = 0; i < data.length; i++) {
+		var c = p.cloneNode(true);
+			
+		UI.bindFields(c, data[i]);
+		
+		p.parentNode.appendChild(c);
+		
+		if (conf.render) {
+			conf.render.call(this, data[i], c);
+		}
+	}
+	
+	p.parentNode.removeChild(p);
+};
+
+/*
+Extension code
+*/
 function toggleExpand(el) {
 	if (el.className.indexOf('collapsed') >= 0)
 		el.className = el.className.replace(/collapsed/g, '');
 	else
 		el.className += 'collapsed';
 };
-
 
 function isNextEpisode(next, anime) {
 	return (next.ep > anime.lastEp);
@@ -85,148 +177,70 @@ function parseAnime(item, exp) {
 	return next;
 };
 
-function insertSorted(title, root, el) {
-	for (var i = 0; i < root.childNodes.length; i++) {
-		var c = root.childNodes[i];
-		if (c.nodeType === 1 && c.className.indexOf('anime') >= 0) {
-			if (c.querySelector('.title').firstChild.nodeValue > title) {
-				root.insertBefore(el, c);
-				return;
-			}
-		}
-	}		
-	root.appendChild(el);
-};
-
-function removePrototypeElements(el) {
-	var p = el.querySelectorAll('.prototype');
-	if (p.length > 0) {
-		for (var i = p.length; i--;) {
-			p[i].parentNode.removeChild(p[i]);
-		}
-	}
-};
-
-function downloadTorrent(e) {
-	var url = e.target.getAttribute('href');
+function downloadTorrent(el) {
+	var url = el.getAttribute('href');
 	chrome.tabs.update(null, { url: url });
 };
 
-function appendLink(el, anime) {
-	var a = document.createElement('a'),
-		url = anime.xml.querySelector('link').firstChild.nodeValue;
-	
-	a.className = 'torrent';
-	a.innerText = anime.title;
-	a.setAttribute('href', url);
-	a.addEventListener('click', downloadTorrent, true);
-				
-	el.appendChild(a);
+function collectEpisodes(anime, items, nextEpisodes, latest) {
+	for (var i = 0, ml = CONFIG.maxLatest; i < items.length && latest.length < ml; i++) {
+		var next = parseAnime(items[i], anime),
+			obj = {
+				name: next.title,
+				url: items[i].querySelector('link').firstChild.nodeValue				
+			};
+		
+		if (isNextEpisode(next, anime) && nextEpisodes.length < CONFIG.maxNext) {
+			nextEpisodes.push(obj);
+		}
+		
+		latest.push(obj);
+	}
+};
+
+function applyHref(d, el) {
+	el.setAttribute('href', d.url);
 };
 
 function pullTorrents(anime, el) {
+	el.className += ' loading';
+
 	var req = new XMLHttpRequest();
 	req.open('GET', 'http://www.nyaa.eu/?page=rss&cats=1_37&term=' + anime.name, true);
-	req.onload = function() {	
-		// console.log(req.responseXML);
-		var latestEl = el.querySelector('.latest'),
-			epEl = el.querySelector('.next'),
-			maxLatest = latestEl.childNodes.length + CONFIG.maxLatest,
-			maxNext = epEl.childNodes.length + CONFIG.maxNext,
-			items = req.responseXML.getElementsByTagName('item');
+	req.onload = function() {		
+		var next = [], latest = [];
 			
+		collectEpisodes(anime, req.responseXML.getElementsByTagName('item'), next, latest);
+		
+		UI.list(next, el, '.next .torrent', { render: applyHref });
+		UI.list(latest, el, '.latest .torrent', { render: applyHref });
+		
 		el.className = el.className.replace(/loading/g, '');
-			
-		for (var i = 0; i < items.length && latestEl.childNodes.length < maxLatest; i++) {
-			var next = parseAnime(items[i], anime);
-			
-			if (isNextEpisode(next, anime) && epEl.childNodes.length < maxNext) {
-				appendLink(epEl, next);
-			}
-			
-			appendLink(latestEl, next);
-		}
 	};
 	req.send(null);
 };
 
 window.onload = function() {
-	var root = document.getElementById('animes'),
-		prot = document.getElementById('prototype');
-		
-	for (var i = 0; i < CONFIG.animes.length; i++) {
-		var el = prot.cloneNode(true),
-			anime = CONFIG.animes[i];
-			
-		el.removeAttribute('id');
-		el.querySelector('.title').innerText = anime.name;
-		
-		// cleanup prototype stuff
-		removePrototypeElements(el);
-		
-		insertSorted(anime.name, root, el);
-		
-		pullTorrents(anime, el);
-	}
+	var root = document.getElementById('animes');
+	
+	UI.list(CONFIG.animes, root, '.anime', { render: pullTorrents });
 };
 </script>
-<style>
-body {
-	min-width: 600px;
-	overflow-x: hidden;
-}
-
-.anime.loading {
-	color: #ccc;
-}
-.anime {
-	border-bottom: 1px dashed #000;
-	margin-bottom: 4px;
-	margin-top: 4px;
-}
-.anime:last-child {
-	border-bottom: none;
-}
-
-.title {
-	font-weight: bold;
-}
-.latest .title {
-	cursor: pointer;
-}
-
-.torrent {
-	margin-left: 8px;
-	text-decoration: none;
-}
-
-.torrent:hover {
-	text-decoration: underline;
-}
-
-.collapsed .torrent {
-	display: none;
-}
-
-#prototype {
-	display: none;
-}
-</style>
 
 <body>
-	<div id="prototype" class="anime loading">
-		<div class="title">Whatever</div>
-		<div class="downloads">
-			<div class="category next">
-				<span class="title">Next</span>
-				<a class="torrent prototype" href="http://test">test</a>
-			</div>
-			<div class="category latest collapsed">				
-				<span class="title" onclick="toggleExpand(this.parentNode);">Latest</span>
-				<a class="torrent prototype" href="http://test">test</a>
+	<div id="animes">
+		<div class="anime" bindScope="anime">
+			<div class="title" bindField="name" bindScope="anime">Whatever</div>
+			<div class="downloads">
+				<div class="category next">
+					<span class="title">Next</span>
+					<a class="torrent" onclick="downloadTorrent(this);" bindField="name">Loading...</a>
+				</div>
+				<div class="category latest collapsed">				
+					<span class="title" onclick="toggleExpand(this.parentNode);">Latest</span>
+					<a class="torrent" onclick="downloadTorrent(this);" bindField="name">Loading...</a>
+				</div>
 			</div>
 		</div>
 	</div>
-
-	<div id="animes"></div>
 </body>
