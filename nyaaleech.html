@@ -98,9 +98,13 @@ function insertSorted(title, root, el) {
 	root.appendChild(el);
 };
 
-function removeChilds(el) {
-	while (el.firstChild)
-		el.removeChild(el.firstChild);
+function removePrototypeElements(el) {
+	var p = el.querySelectorAll('.prototype');
+	if (p.length > 0) {
+		for (var i = p.length; i--;) {
+			p[i].parentNode.removeChild(p[i]);
+		}
+	}
 };
 
 function downloadTorrent(e) {
@@ -127,14 +131,16 @@ function pullTorrents(anime, el) {
 		// console.log(req.responseXML);
 		var latestEl = el.querySelector('.latest'),
 			epEl = el.querySelector('.next'),
+			maxLatest = latestEl.childNodes.length + CONFIG.maxLatest,
+			maxNext = epEl.childNodes.length + CONFIG.maxNext,
 			items = req.responseXML.getElementsByTagName('item');
 			
 		el.className = el.className.replace(/loading/g, '');
 			
-		for (var i = 0; i < items.length && latestEl.childNodes.length < CONFIG.maxLatest; i++) {
+		for (var i = 0; i < items.length && latestEl.childNodes.length < maxLatest; i++) {
 			var next = parseAnime(items[i], anime);
 			
-			if (isNextEpisode(next, anime) && epEl.childNodes.length < CONFIG.maxNext) {
+			if (isNextEpisode(next, anime) && epEl.childNodes.length < maxNext) {
 				appendLink(epEl, next);
 			}
 			
@@ -156,8 +162,7 @@ window.onload = function() {
 		el.querySelector('.title').innerText = anime.name;
 		
 		// cleanup prototype stuff
-		removeChilds(el.querySelector('.latest'));
-		removeChilds(el.querySelector('.next'));
+		removePrototypeElements(el);
 		
 		insertSorted(anime.name, root, el);
 		
@@ -186,12 +191,8 @@ body {
 .title {
 	font-weight: bold;
 }
-
-.downloads .latest:before {
-	content: 'Latest';
-}
-.downloads .next:before {
-	content: 'Next';
+.latest .title {
+	cursor: pointer;
 }
 
 .torrent {
@@ -217,12 +218,12 @@ body {
 		<div class="title">Whatever</div>
 		<div class="downloads">
 			<div class="category next">
-				<a class="torrent" href="http://test">test</a>
-				<a class="torrent" href="http://test">test2</a>
+				<span class="title">Next</span>
+				<a class="torrent prototype" href="http://test">test</a>
 			</div>
-			<div class="category latest collapsed" onclick="toggleExpand(this);">				
-				<a class="torrent" href="http://test">test</a>
-				<a class="torrent" href="http://test">test2</a>
+			<div class="category latest collapsed">				
+				<span class="title" onclick="toggleExpand(this.parentNode);">Latest</span>
+				<a class="torrent prototype" href="http://test">test</a>
 			</div>
 		</div>
 	</div>
