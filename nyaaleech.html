@@ -35,14 +35,45 @@ body {
 .collapsed .torrent {
 	display: none;
 }
+
+#ops {
+	border-bottom: 1px dashed #000;
+}
+
+#animeForm .label {
+	width: 80px;
+	display: inline-block;
+	text-align: right;
+}
+
+#animeForm input {
+	width: 270px;
+}
+
+#animeForm .buttons {
+	height: 30px;
+	width: 356px;
+}
+#animeForm .buttons * {
+	float: right;
+}
+
+#animeForm .dupe .label, 
+#animeForm .dupe button {
+	visibility: hidden;
+}
+
+#animeForm.collapsed {
+	display: none;
+}
 </style>
 <script>
 // TODO: add some simple management ui
 var CONFIG = {
 	maxNext: 3,
-	maxLatest: 15,
+	maxLatest: 15
 	
-	animes: [
+	/*animes: [
 		{
 			name: 'Bleach', lastEp: 355,
 			prefs: /\[HorribleSubs\] Bleach - ([0-9]*)/
@@ -82,13 +113,14 @@ var CONFIG = {
 			name: 'Nisemonogatari', lastEp: 1,
 			prefs: /\[HorribleSubs\] Nisemonogatari - ([0-9]*) \[1080p\]/
 		}
-	]
+	]*/
 };
 
 /*
 UI-Library
 */
-var UI = {};
+var UI = {},
+	UTIL = {};
 
 // TODO: bindAttribute to bind attributes, bindText to bind text, bindHtml to bind innerhtml
 UI.bindField = function(el, data) {
@@ -124,17 +156,71 @@ UI.list = function(data, rootEl, itemPrototypeSelector, conf) {
 		
 	for (var i = 0; i < data.length; i++) {
 		var c = p.cloneNode(true);
-			
+		
 		UI.bindFields(c, data[i]);
 		
 		p.parentNode.appendChild(c);
 		
-		if (conf.render) {
-			conf.render.call(this, data[i], c);
-		}
+		UTIL.signal(conf.render, [ data[i], c ]);
 	}
 	
 	p.parentNode.removeChild(p);
+};
+
+UI.dupe = function(el) {
+	var d = el.cloneNode(true);
+	// TODO: remove all id's
+	if (el.parentNode.lastChild === el)
+		el.parentNode.appendChild(d);
+	else
+		el.parentNode.insertBefore(d, el.nextSibling);
+		
+	return d;
+};
+
+UI.formValues = function(form) {
+	var values = {},
+		e = form.elements;
+		
+	if (e.length > 0) {
+		for (var i = e.length; i--; ) {
+			var n = e[i].getAttribute('name'),
+				v = e[i].value;
+				
+			if (typeof(n) === 'string') {
+				if (typeof(values[n]) !== 'undefined') {
+					if (typeof(values[n].push) === 'function')
+						values[n].push(v);
+					else
+						values[n] = [ values[n], v ];
+				} else {
+					values[n] = v;
+				}
+			}
+		}
+	}
+	
+	return values;
+};
+
+UTIL.signal = function(listeners, args) {
+	if (!listeners)
+		return;
+
+	if (typeof(listeners) === 'function')
+		listeners.apply(window, args);
+	else
+		for (var i = 0; i < listeners.length; i++)
+			listeners[i].apply(window, args);
+};
+
+Array.prototype.indexOfByFn = function(fn) {
+	if (this.length > 0)
+		for (var i = this.length; i--;) 
+			if (fn(this[i]) === true)
+				return i;
+				
+	return -1;
 };
 
 /*
@@ -148,7 +234,7 @@ function toggleExpand(el) {
 };
 
 function isNextEpisode(next, anime) {
-	return (next.ep > anime.lastEp);
+	return (next.ep > anime.episode);
 };
 
 function parseAnime(item, exp) {
@@ -203,6 +289,10 @@ function applyHref(d, el) {
 	el.setAttribute('href', d.url);
 };
 
+function prepareRemoveBtn(anime, el) {
+	el.querySelector('.removeAnime').setAttribute('animeName', anime.name);
+};
+
 function pullTorrents(anime, el) {
 	el.className += ' loading';
 
@@ -222,16 +312,109 @@ function pullTorrents(anime, el) {
 };
 
 window.onload = function() {
-	var root = document.getElementById('animes');
+	var root = document.getElementById('animes'),
+		animes = getStoredAnimes();
 	
-	UI.list(CONFIG.animes, root, '.anime', { render: pullTorrents });
+	UI.list(animes, root, '.anime', { render: [ prepareRemoveBtn, pullTorrents ] });
+};
+
+function addFilter(orig) {
+	var d = UI.dupe(orig);
+	d.querySelector('input').value = '';	
+	d.className += ' dupe';
+};
+
+function removeAnime(name) {
+	var animes = getStoredAnimes(),
+		idx = animes.indexOfByFn(function(a) {
+		console.log(a.name + " # " + name);
+		return a.name === name;
+	});
+	
+	if (idx >= 0)
+		animes.splice(idx, 1);
+	
+	localStorage.setItem('animes', JSON.stringify(animes));
+	
+	// TODO: remove from UI
+};
+
+function saveAnime(form) {
+	var v = UI.formValues(form.querySelector('form'));
+	// TODO: validate v
+	
+	// some data changes/adjustments
+	v.episode = parseInt(v.episode, 10);
+	
+	var animes = getStoredAnimes(),	
+		idx = animes.indexOfByFn(function(o) {
+			return o.name === v.name;
+		});
+	
+	if (idx < 0)
+		animes.push(v);
+	else
+		animes[idx] = v;
+		
+	animes.sort(function(a, b) {
+		return a.name.toLowerCase() > b.name.toLowerCase();
+	});
+		
+	localStorage.setItem('animes', JSON.stringify(animes));
+	
+	// TODO: reload UI
+};
+
+function removeStoredAnimes() {
+	if (confirm('u sure? really?'))
+		localStorage.removeItem('animes');
+};
+
+function getStoredAnimes() {
+	var a = localStorage.getItem('animes');
+	if (a)
+		a = JSON.parse(a);
+	else
+		a = [];
+		
+	return a;
 };
 </script>
 
 <body>
+	<div id="ops">
+		<div class="toolbar">
+			<a href="javascript:void(0);" onclick="toggleExpand(document.getElementById('animeForm'));">Add</a>
+			<a href="javascript:void(0);" onclick="removeStoredAnimes();">Remove all animes</a>
+		</div>
+		<div id="animeForm" class="collapsed">
+			<form>
+			<div>
+				<span class="label">Name:</span>
+				<input type="text" name="name">
+			</div>
+			<div>
+				<span class="label">Episode:</span>
+				<input type="text" name="episode">
+			</div>
+			<div>
+				<span class="label">Preferred:</span>
+				<input type="text" name="prefs">
+				<button onclick="addFilter(this.parentNode); return false;">+</button>
+			</div>
+			<div class="buttons">
+				<button onclick="saveAnime(document.getElementById('animeForm'));">Save</button>
+			</div>
+			</form>
+		</div>
+	</div>
+
 	<div id="animes">
 		<div class="anime" bindScope="anime">
-			<div class="title" bindField="name" bindScope="anime">Whatever</div>
+			<div class="title">
+				<span bindField="name" bindScope="anime">Whatever</span>
+				<button class="removeAnime" onclick="removeAnime(this.getAttribute('animeName'));">X</button>
+			</div>
 			<div class="downloads">
 				<div class="category next">
 					<span class="title">Next</span>
