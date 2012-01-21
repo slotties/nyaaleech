@@ -63,10 +63,13 @@ body {
 	visibility: hidden;
 }
 
-#animeForm.collapsed {
+#animeForm.collapsed,
+#impexp.collapsed {
 	display: none;
 }
 </style>
+<script src="base.js"></script>
+
 <script>
 // TODO: add some simple management ui
 var CONFIG = {
@@ -116,116 +119,6 @@ var CONFIG = {
 	]*/
 };
 
-/*
-UI-Library
-*/
-var UI = {},
-	UTIL = {};
-
-// TODO: bindAttribute to bind attributes, bindText to bind text, bindHtml to bind innerhtml
-UI.bindField = function(el, data) {
-	var k = el.getAttribute('bindField'),
-		v = data[k];
-	
-	// substitute render-functions
-	// TODO: test
-	/*if (typeof(v) === 'function')
-		v = v(k, el, data);*/
-	
-	el.innerText = v;
-};
-
-UI.bindFields = function(protEl, data) {
-	if (protEl.hasAttribute('bindScope')) {
-		var binds = protEl.querySelectorAll('[bindScope=' + protEl.getAttribute('bindScope') + ']');
-	} else {
-		var binds = protEl.querySelectorAll('[bindField]');
-	}
-	
-	if (protEl.hasAttribute('bindField'))
-		UI.bindField(protEl, data);
-		
-	for (var i = 0; i < binds.length; i++) {
-		UI.bindField(binds[i], data);
-	}
-};
-
-UI.list = function(data, rootEl, itemPrototypeSelector, conf) {
-	var p = rootEl.querySelector(itemPrototypeSelector),
-		bindScope = p.getAttribute('bindScope');
-		
-	for (var i = 0; i < data.length; i++) {
-		var c = p.cloneNode(true);
-		
-		UI.bindFields(c, data[i]);
-		
-		p.parentNode.appendChild(c);
-		
-		UTIL.signal(conf.render, [ data[i], c ]);
-	}
-	
-	p.parentNode.removeChild(p);
-};
-
-UI.dupe = function(el) {
-	var d = el.cloneNode(true);
-	// TODO: remove all id's
-	if (el.parentNode.lastChild === el)
-		el.parentNode.appendChild(d);
-	else
-		el.parentNode.insertBefore(d, el.nextSibling);
-		
-	return d;
-};
-
-UI.formValues = function(form) {
-	var values = {},
-		e = form.elements;
-		
-	if (e.length > 0) {
-		for (var i = e.length; i--; ) {
-			var n = e[i].getAttribute('name'),
-				v = e[i].value;
-				
-			if (typeof(n) === 'string') {
-				if (typeof(values[n]) !== 'undefined') {
-					if (typeof(values[n].push) === 'function')
-						values[n].push(v);
-					else
-						values[n] = [ values[n], v ];
-				} else {
-					values[n] = v;
-				}
-			}
-		}
-	}
-	
-	return values;
-};
-
-UTIL.signal = function(listeners, args) {
-	if (!listeners)
-		return;
-
-	if (typeof(listeners) === 'function')
-		listeners.apply(window, args);
-	else
-		for (var i = 0; i < listeners.length; i++)
-			listeners[i].apply(window, args);
-};
-
-Array.prototype.indexOfByFn = function(fn) {
-	if (this.length > 0)
-		for (var i = this.length; i--;) 
-			if (fn(this[i]) === true)
-				return i;
-				
-	return -1;
-};
-
-/*
-Extension code
-*/
 function toggleExpand(el) {
 	if (el.className.indexOf('collapsed') >= 0)
 		el.className = el.className.replace(/collapsed/g, '');
@@ -247,10 +140,12 @@ function parseAnime(item, exp) {
 		m = null;
 	
 	if (exp.prefs) {
-		if (exp.prefs.length > 0) {
+		if (typeof(exp.prefs) !== 'string') {
 			// array
-			for (var i = exp.prefs.length; i-- && !m; ) {
-				m = new RegExp(exp.prefs[i]).exec(title);
+			if (exp.prefs.length > 0) {
+				for (var i = exp.prefs.length; i-- && !m; ) {
+					m = new RegExp(exp.prefs[i]).exec(title);
+				}
 			}
 		} else {
 			m = new RegExp(exp.prefs).exec(title);
@@ -289,8 +184,8 @@ function applyHref(d, el) {
 	el.setAttribute('href', d.url);
 };
 
-function prepareRemoveBtn(anime, el) {
-	el.querySelector('.removeAnime').setAttribute('animeName', anime.name);
+function bindAnimeName(anime, el) {
+	el.setAttribute('animeName', anime.name);
 };
 
 function pullTorrents(anime, el) {
@@ -315,19 +210,21 @@ window.onload = function() {
 	var root = document.getElementById('animes'),
 		animes = getStoredAnimes();
 	
-	UI.list(animes, root, '.anime', { render: [ prepareRemoveBtn, pullTorrents ] });
+	UI.list(animes, root, '.anime', { render: [ bindAnimeName, pullTorrents ] });
 };
 
 function addFilter(orig) {
 	var d = UI.dupe(orig);
 	d.querySelector('input').value = '';	
 	d.className += ' dupe';
+	
+	return d;
 };
 
-function removeAnime(name) {
+function removeAnime(animeEl) {
 	var animes = getStoredAnimes(),
+		name = animeEl.getAttribute('animeName'),
 		idx = animes.indexOfByFn(function(a) {
-		console.log(a.name + " # " + name);
 		return a.name === name;
 	});
 	
@@ -336,7 +233,58 @@ function removeAnime(name) {
 	
 	localStorage.setItem('animes', JSON.stringify(animes));
 	
-	// TODO: remove from UI
+	animeEl.parentNode.removeChild(animeEl);
+};
+
+function showAnimeForm(data) {
+	var el = document.getElementById('animeForm');
+	if (!data)
+		data = {
+			name: '',
+			episode: '',
+			prefs: ''
+		};
+	
+	el.className = el.className.replace(/collapsed/g, '');
+	
+	el.querySelector('[name="name"]').value = data.name;
+	el.querySelector('[name="episode"]').value = data.episode;
+	
+	var addFilterBtn = el.querySelector('.addFilter');
+	
+	// TODO: optimize by re-using duped filters
+	var dupedFilters = el.querySelectorAll('.dupe');
+	for (var i = 0; i < dupedFilters.length; i++) {
+		dupedFilters[i].parentNode.removeChild(dupedFilters[i]);
+	}
+	
+	var filterField = el.querySelector('[name="prefs"]');
+	if (typeof(data.prefs) === 'string') {
+		filterField.value = data.prefs;
+	} else {
+		for (var i = 0; i < data.prefs.length; i++) {
+			filterField.value = data.prefs[i];
+			
+			var filterContainer = addFilter(filterField.parentNode);
+			filterField = filterContainer.querySelector('[name="prefs"]');
+		}
+	}
+	
+	UI.showCard(el);
+};
+
+function editAnime(animeEl) {
+	var form = document.getElementById('animeForm'),
+		animes = getStoredAnimes(),
+		name = animeEl.getAttribute('animeName'),
+		idx = animes.indexOfByFn(function(o) {
+			return o.name === name;
+		});
+		
+	if (idx < 0)
+		alert('Urg...');
+	
+	showAnimeForm(animes[idx]);
 };
 
 function saveAnime(form) {
@@ -359,35 +307,53 @@ function saveAnime(form) {
 	animes.sort(function(a, b) {
 		return a.name.toLowerCase() > b.name.toLowerCase();
 	});
-		
-	localStorage.setItem('animes', JSON.stringify(animes));
 	
-	// TODO: reload UI
-};
-
-function removeStoredAnimes() {
-	if (confirm('u sure? really?'))
-		localStorage.removeItem('animes');
+	localStorage.setItem('animes', JSON.stringify(animes));
 };
 
 function getStoredAnimes() {
 	var a = localStorage.getItem('animes');
-	if (a)
-		a = JSON.parse(a);
-	else
-		a = [];
+	if (a) {
+		try {
+			a = JSON.parse(a);
+		} catch (e) {
+			a = [];
+		}
+	}
 		
-	return a;
+	return a || [];
+};
+
+function exportJson() {
+	var str = localStorage.getItem('animes'),
+		impexp = document.getElementById('impexp');
+	
+	impexp.querySelector('textarea').value = str;
+	
+	UI.showCard(impexp);
+};
+
+function importJson() {
+	if (confirm('u sure?')) {
+		var impexp = document.getElementById('impexp'),
+			str = impexp.querySelector('textarea').value;
+			
+		// TODO: check str!
+		localStorage.setItem('animes', str);
+
+		window.location.reload();
+	}
 };
 </script>
 
 <body>
 	<div id="ops">
 		<div class="toolbar">
-			<a href="javascript:void(0);" onclick="toggleExpand(document.getElementById('animeForm'));">Add</a>
-			<a href="javascript:void(0);" onclick="removeStoredAnimes();">Remove all animes</a>
+			<a href="javascript:void(0);" onclick="showAnimeForm();">add</a>
+			<a href="javascript:void(0);" onclick="exportJson();">export</a>
 		</div>
-		<div id="animeForm" class="collapsed">
+		
+		<div id="animeForm" class="collapsed" cardScope="head">
 			<form>
 			<div>
 				<span class="label">Name:</span>
@@ -400,12 +366,17 @@ function getStoredAnimes() {
 			<div>
 				<span class="label">Preferred:</span>
 				<input type="text" name="prefs">
-				<button onclick="addFilter(this.parentNode); return false;">+</button>
+				<button class="addFilter" onclick="addFilter(this.parentNode); return false;">+</button>
 			</div>
 			<div class="buttons">
 				<button onclick="saveAnime(document.getElementById('animeForm'));">Save</button>
 			</div>
 			</form>
+		</div>
+		
+		<div id="impexp" class="collapsed" cardScope="head">
+			<textarea></textarea>
+			<button onclick="importJson(); return false;">Import</button>
 		</div>
 	</div>
 
@@ -413,7 +384,8 @@ function getStoredAnimes() {
 		<div class="anime" bindScope="anime">
 			<div class="title">
 				<span bindField="name" bindScope="anime">Whatever</span>
-				<button class="removeAnime" onclick="removeAnime(this.getAttribute('animeName'));">X</button>
+				<button class="removeAnime" onclick="editAnime(this.parentNode.parentNode);">edit</button>
+				<button class="removeAnime" onclick="removeAnime(this.parentNode.parentNode);">X</button>
 			</div>
 			<div class="downloads">
 				<div class="category next">
