@@ -1,3 +1,10 @@
+<!--
+	TODO:
+- link to anidb
+- +1 to increase episode
+- better design
+- smaller code
+-->
 <style>
 body {
 	min-width: 600px;
@@ -15,41 +22,46 @@ body {
 .anime:last-child {
 	border-bottom: none;
 }
-
-.title {
+.anime .title {
 	font-weight: bold;
 }
-.latest .title {
+.anime .latest .title {
 	cursor: pointer;
 }
-
-.torrent {
+.anime .torrent {
 	margin-left: 8px;
 	text-decoration: none;
 }
-
-.torrent:hover {
+.anime .torrent:hover {
 	text-decoration: underline;
 }
-
-.collapsed .torrent {
+.anime .collapsed .torrent {
 	display: none;
+}
+.anime .editAnime {
+	color: #348017;
+	text-decoration: none;
+}
+.anime .removeAnime {
+	color: #F75D59;
+	text-decoration: none;
 }
 
 #ops {
 	border-bottom: 1px dashed #000;
 }
+#ops .toolbar a {
+	margin-right: 8px;
+}
 
-#animeForm .label {
+#animeForm form .label {
 	width: 80px;
 	display: inline-block;
 	text-align: right;
 }
-
-#animeForm input {
+#animeForm form input {
 	width: 270px;
 }
-
 #animeForm .buttons {
 	height: 30px;
 	width: 356px;
@@ -57,82 +69,24 @@ body {
 #animeForm .buttons * {
 	float: right;
 }
-
 #animeForm .dupe .label, 
 #animeForm .dupe button {
 	visibility: hidden;
 }
 
-#animeForm.collapsed,
-#impexp.collapsed {
+.collapsed {
 	display: none;
 }
+.category.collapsed {
+	display: block;
+}
 </style>
+
 <script src="base.js"></script>
-
 <script>
-// TODO: add some simple management ui
-var CONFIG = {
-	maxNext: 3,
-	maxLatest: 15
-	
-	/*animes: [
-		{
-			name: 'Bleach', lastEp: 355,
-			prefs: /\[HorribleSubs\] Bleach - ([0-9]*)/
-		},
-		{
-			name: 'Mirai Nikki', lastEp: 13,
-			prefs: /\[GotWoot\]_Mirai_Nikki_([0-9]*)/
-		},
-		{
-			name: 'Amagami SS Plus', lastEp: 2,
-			prefs: /\[UTW\]_Amagami_SS_Plus_-_([0-9]*)/
-		},
-		{
-			name: 'Ano Natsu de Matteru', lastEp: 1,
-			prefs: /.*Ano Natsu de Matteru - ([0-9]*)/
-		},
-		{
-			name: 'Another', lastEp: 1,
-			prefs: /\[HorribleSubs\] Another - ([0-9]*)/
-		},
-		{
-			name: 'Brave10', lastEp: 1,
-			prefs: /\[Hiryuu\] Brave10 ([0-9]*)/
-		},
-		{
-			name: 'Daily Lives of High School Boys', lastEp: 1,
-			prefs: /\[sage\]_Daily_Lives_of_High_School_Boys_-_([0-9]*)/
-		},
-		{
-			name: 'Kimi to Boku', lastEp: 12,
-			prefs: [
-				/\[CTSS\] Kimi to Boku - ([0-9]*)/,
-				/\[sage\]_Kimi_to_Boku_-_([0-9]*)/
-			]
-		},
-		{
-			name: 'Nisemonogatari', lastEp: 1,
-			prefs: /\[HorribleSubs\] Nisemonogatari - ([0-9]*) \[1080p\]/
-		}
-	]*/
-};
-
-function toggleExpand(el) {
-	if (el.className.indexOf('collapsed') >= 0)
-		el.className = el.className.replace(/collapsed/g, '');
-	else
-		el.className += 'collapsed';
-};
-
-function isNextEpisode(next, anime) {
-	return (next.ep > anime.episode);
-};
-
 function parseAnime(item, exp) {
-	var title = item.querySelector('title').firstChild.nodeValue,	
-		next = {
+	var title = item.querySelector('title').firstChild.nodeValue,
+		next = { 
 			title: title,
 			xml: item,
 			ep: null
@@ -141,7 +95,6 @@ function parseAnime(item, exp) {
 	
 	if (exp.prefs) {
 		if (typeof(exp.prefs) !== 'string') {
-			// array
 			if (exp.prefs.length > 0) {
 				for (var i = exp.prefs.length; i-- && !m; ) {
 					m = new RegExp(exp.prefs[i]).exec(title);
@@ -165,14 +118,17 @@ function downloadTorrent(el) {
 };
 
 function collectEpisodes(anime, items, nextEpisodes, latest) {
-	for (var i = 0, ml = CONFIG.maxLatest; i < items.length && latest.length < ml; i++) {
+	var maxLatest = 15,
+		maxNext = 3;
+
+	for (var i = 0; i < items.length && latest.length < maxLatest; i++) {
 		var next = parseAnime(items[i], anime),
 			obj = {
 				name: next.title,
 				url: items[i].querySelector('link').firstChild.nodeValue				
 			};
 		
-		if (isNextEpisode(next, anime) && nextEpisodes.length < CONFIG.maxNext) {
+		if (next.ep > anime.episode && nextEpisodes.length < maxNext) {
 			nextEpisodes.push(obj);
 		}
 		
@@ -201,16 +157,9 @@ function pullTorrents(anime, el) {
 		UI.list(next, el, '.next .torrent', { render: applyHref });
 		UI.list(latest, el, '.latest .torrent', { render: applyHref });
 		
-		el.className = el.className.replace(/loading/g, '');
+		UI.removeCls(el, 'loading');
 	};
 	req.send(null);
-};
-
-window.onload = function() {
-	var root = document.getElementById('animes'),
-		animes = getStoredAnimes();
-	
-	UI.list(animes, root, '.anime', { render: [ bindAnimeName, pullTorrents ] });
 };
 
 function addFilter(orig) {
@@ -222,14 +171,16 @@ function addFilter(orig) {
 };
 
 function removeAnime(animeEl) {
+	if (!confirm('u sure?'))
+		return;
+
 	var animes = getStoredAnimes(),
 		name = animeEl.getAttribute('animeName'),
 		idx = animes.indexOfByFn(function(a) {
-		return a.name === name;
-	});
+			return a.name === name;
+		});
 	
-	if (idx >= 0)
-		animes.splice(idx, 1);
+	animes.splice(idx, 1);
 	
 	localStorage.setItem('animes', JSON.stringify(animes));
 	
@@ -244,8 +195,6 @@ function showAnimeForm(data) {
 			episode: '',
 			prefs: ''
 		};
-	
-	el.className = el.className.replace(/collapsed/g, '');
 	
 	el.querySelector('[name="name"]').value = data.name;
 	el.querySelector('[name="episode"]').value = data.episode;
@@ -265,8 +214,7 @@ function showAnimeForm(data) {
 		for (var i = 0; i < data.prefs.length; i++) {
 			filterField.value = data.prefs[i];
 			
-			var filterContainer = addFilter(filterField.parentNode);
-			filterField = filterContainer.querySelector('[name="prefs"]');
+			filterField = addFilter(filterField.parentNode).querySelector('[name="prefs"]');
 		}
 	}
 	
@@ -281,9 +229,6 @@ function editAnime(animeEl) {
 			return o.name === name;
 		});
 		
-	if (idx < 0)
-		alert('Urg...');
-	
 	showAnimeForm(animes[idx]);
 };
 
@@ -344,13 +289,20 @@ function importJson() {
 		window.location.reload();
 	}
 };
+
+window.onload = function() {
+	var root = document.getElementById('animes'),
+		animes = getStoredAnimes();
+		
+	UI.list(animes, root, '.anime', { render: [ bindAnimeName, pullTorrents ] });
+};
 </script>
 
 <body>
 	<div id="ops">
 		<div class="toolbar">
 			<a href="javascript:void(0);" onclick="showAnimeForm();">add</a>
-			<a href="javascript:void(0);" onclick="exportJson();">export</a>
+			<a href="javascript:void(0);" onclick="exportJson();">import / export</a>
 		</div>
 		
 		<div id="animeForm" class="collapsed" cardScope="head">
@@ -376,7 +328,7 @@ function importJson() {
 		
 		<div id="impexp" class="collapsed" cardScope="head">
 			<textarea></textarea>
-			<button onclick="importJson(); return false;">Import</button>
+			<button onclick="importJson();">Import</button>
 		</div>
 	</div>
 
@@ -384,8 +336,8 @@ function importJson() {
 		<div class="anime" bindScope="anime">
 			<div class="title">
 				<span bindField="name" bindScope="anime">Whatever</span>
-				<button class="removeAnime" onclick="editAnime(this.parentNode.parentNode);">edit</button>
-				<button class="removeAnime" onclick="removeAnime(this.parentNode.parentNode);">X</button>
+				<a class="editAnime" href="javascript:void(0);" onclick="editAnime(this.parentNode.parentNode);">edit</a>
+				<a class="removeAnime" href="javascript:void(0);" onclick="removeAnime(this.parentNode.parentNode);">delete</a>
 			</div>
 			<div class="downloads">
 				<div class="category next">
@@ -393,7 +345,7 @@ function importJson() {
 					<a class="torrent" onclick="downloadTorrent(this);" bindField="name">Loading...</a>
 				</div>
 				<div class="category latest collapsed">				
-					<span class="title" onclick="toggleExpand(this.parentNode);">Latest</span>
+					<span class="title" onclick="UI.toggleCls(this.parentNode, 'collapsed');">Latest</span>
 					<a class="torrent" onclick="downloadTorrent(this);" bindField="name">Loading...</a>
 				</div>
 			</div>

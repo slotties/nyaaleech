@@ -93,6 +93,21 @@ UI.showCard = function(el) {
 	}
 };
 
+UI.toggleCls = function(el, cls) {
+	var idx = el.className.indexOf(cls);
+	if (idx < 0) {
+		el.className += ' ' + cls;
+	} else {
+		el.className = el.className.substring(0, idx) + el.className.substring(idx + cls.length);
+	}
+};
+
+UI.removeCls = function(el, cls) {
+	var idx = el.className.indexOf(cls);
+	if (idx >= 0)
+		el.className = el.className.substring(0, idx) + el.className.substring(idx + cls.length);
+};
+
 /* ****************************************************************************
 		UTIL
 **************************************************************************** */
