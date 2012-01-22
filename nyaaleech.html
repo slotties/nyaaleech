@@ -1,6 +1,5 @@
 <!--
 	TODO:
-- link to anidb
 - +1 to increase episode
 - better design
 - smaller code
@@ -44,6 +43,9 @@ body {
 }
 .anime .removeAnime {
 	color: #F75D59;
+	text-decoration: none;
+}
+.anime .anidb {
 	text-decoration: none;
 }
 
@@ -112,7 +114,7 @@ function parseAnime(item, exp) {
 	return next;
 };
 
-function downloadTorrent(el) {
+function openLink(el) {
 	var url = el.getAttribute('href');
 	chrome.tabs.update(null, { url: url });
 };
@@ -142,6 +144,9 @@ function applyHref(d, el) {
 
 function bindAnimeName(anime, el) {
 	el.setAttribute('animeName', anime.name);
+	
+	var anidbUrl = 'http://anidb.net/perl-bin/animedb.pl?show=animelist&adb.search=' + escape(anime.name) + '&do.search=search';
+	el.querySelector('.anidb').setAttribute('href', anidbUrl);
 };
 
 function pullTorrents(anime, el) {
@@ -256,6 +261,9 @@ function saveAnime(form) {
 	localStorage.setItem('animes', JSON.stringify(animes));
 };
 
+function storeAnime(v) {
+};
+
 function getStoredAnimes() {
 	var a = localStorage.getItem('animes');
 	if (a) {
@@ -338,15 +346,16 @@ window.onload = function() {
 				<span bindField="name" bindScope="anime">Whatever</span>
 				<a class="editAnime" href="javascript:void(0);" onclick="editAnime(this.parentNode.parentNode);">edit</a>
 				<a class="removeAnime" href="javascript:void(0);" onclick="removeAnime(this.parentNode.parentNode);">delete</a>
+				<a class="anidb" onclick="openLink(this);">anidb</a>
 			</div>
 			<div class="downloads">
 				<div class="category next">
 					<span class="title">Next</span>
-					<a class="torrent" onclick="downloadTorrent(this);" bindField="name">Loading...</a>
+					<a class="torrent" onclick="openLink(this);" bindField="name">Loading...</a>
 				</div>
 				<div class="category latest collapsed">				
 					<span class="title" onclick="UI.toggleCls(this.parentNode, 'collapsed');">Latest</span>
-					<a class="torrent" onclick="downloadTorrent(this);" bindField="name">Loading...</a>
+					<a class="torrent" onclick="openLink(this);" bindField="name">Loading...</a>
 				</div>
 			</div>
 		</div>
