@@ -66,8 +66,8 @@ UI.formValues = function(form) {
 		for (var i = e.length; i--; ) {
 			var n = e[i].getAttribute('name'),
 				v = e[i].value;
-				
-			if (typeof(n) === 'string') {
+			
+			if (typeof(n) === 'string' && v !== '') {
 				if (typeof(values[n]) !== 'undefined') {
 					if (typeof(values[n].push) === 'function')
 						values[n].push(v);

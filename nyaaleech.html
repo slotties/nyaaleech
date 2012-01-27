@@ -81,35 +81,23 @@ body a:hover {
 <script>
 function parseAnime(item, exp) {
 	var title = item.querySelector('title').firstChild.nodeValue,
-		next = { 
-			title: title,
-			xml: item,
-			ep: null
-		},
+		next = { title: title },
 		m = null;
 	
-	if (exp.prefs) {
-		if (typeof(exp.prefs) !== 'string') {
-			if (exp.prefs.length > 0) {
-				for (var i = exp.prefs.length; i-- && !m; ) {
-					m = new RegExp(exp.prefs[i]).exec(title);
-				}
-			}
-		} else {
-			m = new RegExp(exp.prefs).exec(title);
-		}
-	}
+	if (exp.prefs && exp.prefs.length > 0)
+		for (var i = exp.prefs.length; i-- && !m; )
+			m = new RegExp(exp.prefs[i]).exec(title); // TODO: cache RegExp object
 	
-	if (m && m.length > 1) {
+	if (m && m.length > 1)
 		next.ep = m[1];
-	}
 	
 	return next;
 };
 
 function openLink(el) {
 	var url = el.getAttribute('href');
-	chrome.tabs.update(null, { url: url });
+	if (url)
+		chrome.tabs.update(null, { url: url });
 };
 
 function collectEpisodes(anime, items, nextEpisodes, latest) {
@@ -166,33 +154,31 @@ function addFilter(orig) {
 	return d;
 };
 
+function getAnimeIdx(animeEl) {
+	var n = (typeof(animeEl) === 'string' ? animeEl : animeEl.getAttribute('animeName'));
+	
+	return window.animes.indexOfByFn(function(a) {
+		return a.name === n;
+	});
+};
+
 function removeAnime(animeEl) {
 	if (!confirm('u sure?'))
 		return;
 
-	var animes = getStoredAnimes(),
-		name = animeEl.getAttribute('animeName'),
-		idx = animes.indexOfByFn(function(a) {
-			return a.name === name;
-		});
+	var idx = getAnimeIdx(animeEl);	
+	window.animes.splice(idx, 1);
 	
-	animes.splice(idx, 1);
-	
-	localStorage.setItem('animes', JSON.stringify(animes));
+	storeAnimes();
 	
 	animeEl.parentNode.removeChild(animeEl);
 };
 
 function increaseEpisode(animeEl) {
-	var animes = getStoredAnimes(),
-		name = animeEl.getAttribute('animeName'),
-		idx = animes.indexOfByFn(function(a) {
-			return a.name === name;
-		});
-	
+	var idx = getAnimeIdx(animeEl);	
 	animes[idx].episode += 1;
 	
-	localStorage.setItem('animes', JSON.stringify(animes));
+	storeAnimes();
 	
 	window.location.reload();
 };
@@ -213,17 +199,14 @@ function showAnimeForm(data) {
 	
 	// TODO: optimize by re-using duped filters
 	var dupedFilters = el.querySelectorAll('.dupe');
-	for (var i = 0; i < dupedFilters.length; i++) {
+	for (var i = 0; i < dupedFilters.length; i++)
 		dupedFilters[i].parentNode.removeChild(dupedFilters[i]);
-	}
 	
 	var filterField = el.querySelector('[name="prefs"]');
-	if (typeof(data.prefs) === 'string') {
-		filterField.value = data.prefs;
-	} else {
+	if (data.prefs) {
 		for (var i = 0; i < data.prefs.length; i++) {
 			filterField.value = data.prefs[i];
-			
+				
 			filterField = addFilter(filterField.parentNode).querySelector('[name="prefs"]');
 		}
 	}
@@ -233,13 +216,9 @@ function showAnimeForm(data) {
 
 function editAnime(animeEl) {
 	var form = document.getElementById('animeForm'),
-		animes = getStoredAnimes(),
-		name = animeEl.getAttribute('animeName'),
-		idx = animes.indexOfByFn(function(o) {
-			return o.name === name;
-		});
+		idx = getAnimeIdx(animeEl);
 		
-	showAnimeForm(animes[idx]);
+	showAnimeForm(window.animes[idx]);
 };
 
 function saveAnime(form) {
@@ -249,10 +228,10 @@ function saveAnime(form) {
 	// some data changes/adjustments
 	v.episode = parseInt(v.episode, 10);
 	
-	var animes = getStoredAnimes(),	
-		idx = animes.indexOfByFn(function(o) {
-			return o.name === v.name;
-		});
+	if (typeof(v.prefs) === 'string')
+		v.prefs = [ v.prefs ];
+	
+	var idx = getAnimeIdx(v.name);
 	
 	if (idx < 0)
 		animes.push(v);
@@ -263,20 +242,9 @@ function saveAnime(form) {
 		return a.name.toLowerCase() > b.name.toLowerCase();
 	});
 	
-	localStorage.setItem('animes', JSON.stringify(animes));
-};
-
-function getStoredAnimes() {
-	var a = localStorage.getItem('animes');
-	if (a) {
-		try {
-			a = JSON.parse(a);
-		} catch (e) {
-			a = [];
-		}
-	}
-		
-	return a || [];
+	storeAnimes();
+	
+	return false;
 };
 
 function exportJson() {
@@ -300,11 +268,24 @@ function importJson() {
 	}
 };
 
+function storeAnimes() {
+	localStorage.setItem('animes', JSON.stringify(window.animes));
+};
+
 window.onload = function() {
-	var root = document.getElementById('animes'),
-		animes = getStoredAnimes();
+	var root = document.getElementById('animes');
+	
+	// parse local stored animes and keep them as global var	
+	var a = localStorage.getItem('animes');
+	if (a) {
+		try {
+			window.animes = JSON.parse(a);
+		} catch (e) {
+			window.animes = [];
+		}
+	}	
 		
-	UI.list(animes, root, '.anime', { render: afterAnimeRendered });
+	UI.list(window.animes, root, '.anime', { render: afterAnimeRendered });
 };
 </script>
 
