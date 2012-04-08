@@ -57,6 +57,14 @@ body a:hover {
 	color: #348017;
 	margin-left: 8px;
 }
+.anime .upAnime {
+	color: #808080;
+	margin-left: 8px;
+}
+.anime .downAnime {
+	color: #808080;
+	margin-left: 8px;
+}
 .anime .removeAnime {
 	color: #F75D59;
 	margin-left: 16px;
@@ -237,14 +245,32 @@ function saveAnime(form) {
 		animes.push(v);
 	else
 		animes[idx] = v;
-		
-	animes.sort(function(a, b) {
-		return a.name.toLowerCase() > b.name.toLowerCase();
-	});
 	
 	storeAnimes();
 	
 	return false;
+};
+
+function upAnime(animeEl) {
+	moveAnime(animeEl, -1);
+};
+
+function downAnime(animeEl) {
+	moveAnime(animeEl, 1);
+};
+
+function moveAnime(animeEl, offset) {
+	var idx = getAnimeIdx(animeEl);
+	
+	if ((idx + offset) >= 0 && ((idx + offset) < window.animes.length)) {
+		var curr = window.animes[idx];
+			
+		window.animes.splice(idx, 1);
+		window.animes.splice(idx + offset, 0, curr);
+	
+		storeAnimes();	
+		window.location.reload();
+	}
 };
 
 function exportJson() {
@@ -329,6 +355,8 @@ window.onload = function() {
 				<a class="anidb" onclick="openLink(this);" bindField="name" bindScope="anime">Whatever</a>
 				<a class="plusOne" href="javascript:void(0);" onclick="increaseEpisode(this.parentNode.parentNode);">+1</a>
 				<a class="editAnime" href="javascript:void(0);" onclick="editAnime(this.parentNode.parentNode);">edit</a>
+				<a class="upAnime" href="javascript:void(0);" onclick="upAnime(this.parentNode.parentNode);">up</a>
+				<a class="downAnime" href="javascript:void(0);" onclick="downAnime(this.parentNode.parentNode);">down</a>
 				<a class="removeAnime" href="javascript:void(0);" onclick="removeAnime(this.parentNode.parentNode);">delete</a>
 			</div>
 			<div class="downloads">
