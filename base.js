@@ -41,7 +41,7 @@ UI.list = function(data, rootEl, itemPrototypeSelector, conf) {
 		
 		p.parentNode.appendChild(c);
 		
-		UTIL.signal(conf.render, [ data[i], c ]);
+		UTIL.signal(conf.render, [ data[i], c, i, data ]);
 	}
 	
 	p.parentNode.removeChild(p);
