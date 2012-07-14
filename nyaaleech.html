@@ -87,18 +87,38 @@ body a:hover {
 
 <script src="base.js"></script>
 <script>
+function createPrefMatcher(e) {
+	var epIdx = e.indexOf('??'),
+		plainTitle = e.substring(0, epIdx < 0 ? e.length : epIdx);
+	
+	return function(title) {
+		if (title.indexOf(plainTitle) !== 0) {
+			return null;
+		}
+		
+		return parseInt(title.substring(plainTitle.length, title.length), 10);
+	};
+};
+
+function convertPrefMatchers(anime) {
+	anime.prefsFn = [];
+
+	if (anime.prefs.length > 0) {	
+		for (var i = anime.prefs.length; i--; ) {
+			anime.prefsFn.push(createPrefMatcher(anime.prefs[i]));
+		}
+	}
+};
+
 function parseAnime(item, exp) {
 	var title = item.querySelector('title').firstChild.nodeValue,
 		next = { title: title },
 		m = null;
 	
-	if (exp.prefs && exp.prefs.length > 0)
-		for (var i = exp.prefs.length; i-- && !m; )
-			m = new RegExp(exp.prefs[i]).exec(title); // TODO: cache RegExp object
-	
-	if (m && m.length > 1)
-		next.ep = m[1];
-	
+	if (exp.prefsFn.length > 0)
+		for (var i = exp.prefsFn.length; i-- && !next.ep; )
+			next.ep = exp.prefsFn[i](title);
+		
 	return next;
 };
 
@@ -132,6 +152,8 @@ function applyHref(d, el) {
 };
 
 function afterAnimeRendered(anime, el) {
+	convertPrefMatchers(anime);
+
 	el.setAttribute('animeName', anime.name);
 	
 	var anidbUrl = 'http://anidb.net/perl-bin/animedb.pl?show=animelist&adb.search=' + escape(anime.name) + '&do.search=search';
