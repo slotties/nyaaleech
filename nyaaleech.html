@@ -103,7 +103,7 @@ function createPrefMatcher(e) {
 function convertPrefMatchers(anime) {
 	anime.prefsFn = [];
 
-	if (anime.prefs.length > 0) {	
+	if (anime.prefs && anime.prefs.length > 0) {	
 		for (var i = anime.prefs.length; i--; ) {
 			anime.prefsFn.push(createPrefMatcher(anime.prefs[i]));
 		}
