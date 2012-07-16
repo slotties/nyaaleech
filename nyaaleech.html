@@ -253,11 +253,12 @@ function editAnime(animeEl) {
 
 function saveAnime(form) {
 	var v = UI.formValues(form.querySelector('form'));
+
 	// TODO: validate v
-	
+
 	// some data changes/adjustments
 	v.episode = parseInt(v.episode, 10);
-	
+
 	if (typeof(v.prefs) === 'string')
 		v.prefs = [ v.prefs ];
 	
@@ -267,7 +268,7 @@ function saveAnime(form) {
 		animes.push(v);
 	else
 		animes[idx] = v;
-	
+
 	storeAnimes();
 	
 	return false;
@@ -331,7 +332,9 @@ window.onload = function() {
 		} catch (e) {
 			window.animes = [];
 		}
-	}	
+	} else {
+		window.animes = [];
+	}
 		
 	UI.list(window.animes, root, '.anime', { render: afterAnimeRendered });
 };
