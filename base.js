@@ -2,31 +2,49 @@
 		UI
 **************************************************************************** */
 window.UI = {};
-// TODO: bindAttribute to bind attributes, bindText to bind text, bindHtml to bind innerhtml
-UI.bindField = function(el, data) {
-	var k = el.getAttribute('bindField'),
-		v = data[k];
+UI.bindElement = function(el, data) {
+	// nodeValue binding
+	var str = el.innerText,
+		idx = str.indexOf('{bind:');
+	while (idx >= 0) {
+		var end = el.innerText.indexOf('}', idx + 6);
+		if (end > 0) {
+			var field = str.substring(idx + 6, end);
+			str = str.substring(0, idx) + data[field] + str.substring(end + 1);
+			idx += data[field].length;
+		} else {
+			idx = str.length;
+		}
+		
+		idx = el.innerText.indexOf('{bind:', idx);
+	}
+	el.innerText = str;
 	
-	// substitute render-functions
-	// TODO: test
-	/*if (typeof(v) === 'function')
-		v = v(k, el, data);*/
-	
-	el.innerText = v;
+	// attribute-specific bindings
+	for (var i = 0; i < el.attributes.length; i++) {
+		var attr = el.attributes[i];
+		if (attr.nodeName.indexOf('bind:') === 0) {
+			el.removeAttribute(attr.nodeName);
+			
+			var v = attr.nodeValue,
+				k = attr.nodeName.substring(5, attr.nodeName.length);
+			el.setAttribute(k, data[v]);
+		}
+	}
 };
 
 UI.bindFields = function(protEl, data) {
 	if (protEl.hasAttribute('bindScope')) {
 		var binds = protEl.querySelectorAll('[bindScope=' + protEl.getAttribute('bindScope') + ']');
 	} else {
-		var binds = protEl.querySelectorAll('[bindField]');
+		var binds = protEl.querySelectorAll('[bound]');
 	}
 	
-	if (protEl.hasAttribute('bindField'))
-		UI.bindField(protEl, data);
+	if (protEl.hasAttribute('bound'))
+		UI.bindElement(protEl, data);
 		
 	for (var i = 0; i < binds.length; i++) {
-		UI.bindField(binds[i], data);
+		UI.bindElement(binds[i], data);
 	}
 };
 

@@ -55,7 +55,10 @@ a:hover { text-decoration: underline; }
 .anime.loading { color: #ccc; }
 .anime { border-top: 1px dashed #000; }
 .anime .next .torrent { margin-left: 8px; }
-.anime .category.collapsed { display: block; }
+.anime .next.collapsed,
+.anime .latest.collapsed {
+	display: block; 
+}
 .anime .collapsed .torrents { display: none; }
 .anime .torrents { padding: 0 0 0 40px;}
 

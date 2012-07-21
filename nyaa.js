@@ -58,15 +58,6 @@ function collectEpisodes(anime, items, nextEpisodes, latest) {
 	}
 };
 
-function applyHref(d, el) {
-	// in the next-list the list is created based on the links, the lastest-list is
-	// built using LI-nodes which contain links.
-	if (el.nodeName !== 'A')
-		el = el.querySelector('a');
-		
-	el.setAttribute('href', d.url);
-};
-
 function afterAnimeRendered(anime, el) {
 	convertPrefMatchers(anime);
 
@@ -84,8 +75,8 @@ function afterAnimeRendered(anime, el) {
 			
 		collectEpisodes(anime, req.responseXML.getElementsByTagName('item'), next, latest);
 		
-		UI.list(next, el, '.next .torrent', { render: applyHref });
-		UI.list(latest, el, '.latest .torrent', { render: applyHref });
+		UI.list(next, el, '.next .torrent', {});
+		UI.list(latest, el, '.latest .torrent', {});
 		
 		UI.removeCls(el, 'loading');
 	};

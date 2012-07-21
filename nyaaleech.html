@@ -40,22 +40,22 @@
 	<div id="animes">
 		<div class="anime" bindScope="anime">
 			<div class="title">
-				<a class="anidb" onclick="openLink(this);" bindField="name" bindScope="anime">Whatever</a>
+				<a class="anidb" onclick="openLink(this);" bound="true" bindScope="anime">{bind:name}</a>
 				<button class="plusOne" onclick="increaseEpisode(this.parentNode.parentNode);" title="+1"/>
 				<button class="edit" onclick="editAnime(this.parentNode.parentNode);" title="Edit"/>
 				<button class="up" onclick="upAnime(this.parentNode.parentNode);" title="Move up"/>
 				<button class="down" onclick="downAnime(this.parentNode.parentNode);" title="Move down"/>
 				<button class="remove" onclick="removeAnime(this.parentNode.parentNode);" title="Remove"/>
 			</div>
-			<div class="downloads">
-				<div class="category next">
+			<div>
+				<div class="next">
 					<span class="title">Next</span>
-					<a class="torrent" onclick="openLink(this);" bindField="name">Loading...</a>
+					<a class="torrent" onclick="openLink(this);" bound="true" bind:href="url">{bind:name}</a>
 				</div>
-				<div class="category latest collapsed">
-					<a class="title" href="javascript:void(0);" onclick="UI.toggleCls(this.parentNode, 'collapsed');">Latest</a>
+				<div class="latest collapsed">
+					<a href="javascript:void(0);" onclick="UI.toggleCls(this.parentNode, 'collapsed');">Latest</a>
 					<ul class="torrents">
-						<li class="torrent"><a onclick="openLink(this);" bindField="name">Loading...</a></li>
+						<li class="torrent"><a onclick="openLink(this);" bound="true" bind:href="url">{bind:name}</a></li>
 					</ul>
 				</div>
 			</div>
