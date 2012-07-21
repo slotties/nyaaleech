@@ -73,15 +73,19 @@ body a:hover {
 	color: #000;
 	font-weight: bold;
 }
-.anime .torrent {
+.anime .next .torrent {
 	margin-left: 8px;
 }
 
 .anime .category.collapsed {
 	display: block;
 }
-.anime .collapsed .torrent {
+.anime .collapsed .torrents {
 	display: none;
+}
+
+.anime .torrents {
+	padding: 0 0 0 40px;
 }
 </style>
 
@@ -148,6 +152,11 @@ function collectEpisodes(anime, items, nextEpisodes, latest) {
 };
 
 function applyHref(d, el) {
+	// in the next-list the list is created based on the links, the lastest-list is
+	// built using LI-nodes which contain links.
+	if (el.nodeName !== 'A')
+		el = el.querySelector('a');
+		
 	el.setAttribute('href', d.url);
 };
 
@@ -389,9 +398,11 @@ window.onload = function() {
 					<span class="title">Next</span>
 					<a class="torrent" onclick="openLink(this);" bindField="name">Loading...</a>
 				</div>
-				<div class="category latest collapsed">				
+				<div class="category latest collapsed">
 					<a class="title" href="javascript:void(0);" onclick="UI.toggleCls(this.parentNode, 'collapsed');">Latest</a>
-					<a class="torrent" onclick="openLink(this);" bindField="name">Loading...</a>
+					<ul class="torrents">
+						<li class="torrent"><a onclick="openLink(this);" bindField="name">Loading...</a></li>
+					</ul>
 				</div>
 			</div>
 		</div>
