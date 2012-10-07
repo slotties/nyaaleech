@@ -33,8 +33,10 @@ function parseAnime(item, exp) {
 	return next;
 };
 
-function openLink(el) {
-	var url = el.getAttribute('href');
+function openLink(evnt) {
+	var el = evnt.target,
+		url = el.getAttribute('href');
+		
 	if (url)
 		chrome.tabs.update(null, { url: url });
 };
@@ -71,16 +73,33 @@ function afterAnimeRendered(anime, el) {
 	var req = new XMLHttpRequest();
 	req.open('GET', 'http://www.nyaa.eu/?page=rss&cats=1_37&term=' + anime.name, true);
 	req.onload = function() {		
-		var next = [], latest = [];
+		var next = [], latest = [],
+			links;
 			
 		collectEpisodes(anime, req.responseXML.getElementsByTagName('item'), next, latest);
 		
-		UI.list(next, el, '.next .torrent', {});
+		UI.list(next, el, '.next .torrentLink', {});
 		UI.list(latest, el, '.latest .torrent', {});
+		
+		links = el.querySelectorAll('.torrentLink');
+		for (var i = 0; i < links.length; i++) {
+			links[i].addEventListener('click', openLink);
+		}
 		
 		UI.removeCls(el, 'loading');
 	};
 	req.send(null);
+	
+	// Register all the event handlers
+	el.querySelector('.toggleLatest').addEventListener('click', function(e) {
+		UI.toggleCls(this.parentNode, 'collapsed');
+	});
+	el.querySelector('.anidb').addEventListener('click', openLink);
+	el.querySelector('.plusOne').addEventListener('click', increaseEpisode);
+	el.querySelector('.edit').addEventListener('click', editAnime);
+	el.querySelector('.up').addEventListener('click', upAnime);
+	el.querySelector('.down').addEventListener('click', downAnime);
+	el.querySelector('.remove').addEventListener('click', removeAnime);
 };
 
 function addFilter(orig) {
@@ -99,11 +118,13 @@ function getAnimeIdx(animeEl) {
 	});
 };
 
-function removeAnime(animeEl) {
+function removeAnime(evnt) {
 	if (!confirm('u sure?'))
 		return;
 
-	var idx = getAnimeIdx(animeEl);	
+	var animeEl = evnt.target.parentNode.parentNode,
+		idx = getAnimeIdx(animeEl);
+		
 	window.animes.splice(idx, 1);
 	
 	storeAnimes();
@@ -111,10 +132,11 @@ function removeAnime(animeEl) {
 	animeEl.parentNode.removeChild(animeEl);
 };
 
-function increaseEpisode(animeEl) {
-	var idx = getAnimeIdx(animeEl);	
-	animes[idx].episode += 1;
-	
+function increaseEpisode(evnt) {
+	var animeEl = evnt.target.parentNode.parentNode,
+		idx = getAnimeIdx(animeEl);	
+		
+	animes[idx].episode += 1;	
 	storeAnimes();
 	
 	window.location.reload();
@@ -159,15 +181,17 @@ function showAnimeForm(data) {
 	UI.showCard(el);
 };
 
-function editAnime(animeEl) {
-	var form = document.getElementById('animeForm'),
+function editAnime(evnt) {
+	var animeEl = evnt.target.parentNode.parentNode,
+		form = document.getElementById('animeForm'),
 		idx = getAnimeIdx(animeEl);
 		
 	showAnimeForm(window.animes[idx]);
 };
 
-function saveAnime(form) {
-	var v = UI.formValues(form.querySelector('form'));
+function saveAnime() {
+	var form = document.getElementById('animeForm'),
+		v = UI.formValues(form.querySelector('form'));
 
 	// TODO: validate v
 
@@ -189,11 +213,15 @@ function saveAnime(form) {
 	return false;
 };
 
-function upAnime(animeEl) {
+function upAnime(evnt) {
+	var animeEl = evnt.target.parentNode.parentNode;
+	
 	moveAnime(animeEl, -1);
 };
 
-function downAnime(animeEl) {
+function downAnime(evnt) {
+	var animeEl = evnt.target.parentNode.parentNode;
+	
 	moveAnime(animeEl, 1);
 };
 
@@ -252,4 +280,8 @@ window.onload = function() {
 	}
 		
 	UI.list(window.animes, root, '.anime', { render: afterAnimeRendered });
+	
+	document.body.querySelector('.add').addEventListener('click', showAnimeForm);
+	document.body.querySelector('.impexp').addEventListener('click', exportJson);
+	document.body.querySelector('.save').addEventListener('click', saveAnime);
 };

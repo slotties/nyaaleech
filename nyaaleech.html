@@ -6,8 +6,8 @@
 <body>
 	<div>
 		<div class="toolbar">
-			<button class="add" onclick="showAnimeForm();" title="New anime"/>
-			<button class="impexp" onclick="exportJson();" title="Import / Export"/>
+			<button class="add" title="New anime"/>
+			<button class="impexp" title="Import / Export"/>
 		</div>
 		
 		<div id="animeForm" class="collapsed" cardScope="head">
@@ -21,12 +21,11 @@
 					<input type="text" name="episode">
 				</div>
 				<div>
-					<span class="label">Preferred</span>
+					<span class="label">Filter</span>
 					<input type="text" name="prefs">
-					<button class="addFilter" onclick="addFilter(this.parentNode); return false;" title="Add filter line"/>
 				</div>
 				<div class="buttons">
-					<button class="save" onclick="saveAnime(document.getElementById('animeForm'));" title="Save"/>
+					<button class="save" title="Save"/>
 				</div>
 			</form>
 		</div>
@@ -40,22 +39,22 @@
 	<div id="animes">
 		<div class="anime" bindScope="anime">
 			<div class="title">
-				<a class="anidb" onclick="openLink(this);" bound="true" bindScope="anime">{bind:name}</a>
-				<button class="plusOne" onclick="increaseEpisode(this.parentNode.parentNode);" title="+1"/>
-				<button class="edit" onclick="editAnime(this.parentNode.parentNode);" title="Edit"/>
-				<button class="up" onclick="upAnime(this.parentNode.parentNode);" title="Move up"/>
-				<button class="down" onclick="downAnime(this.parentNode.parentNode);" title="Move down"/>
-				<button class="remove" onclick="removeAnime(this.parentNode.parentNode);" title="Remove"/>
+				<span class="anidb" bound="true" bindScope="anime">{bind:name}</span>
+				<button class="plusOne" title="+1"/>
+				<button class="edit" title="Edit"/>
+				<button class="up" title="Move up"/>
+				<button class="down" title="Move down"/>
+				<button class="remove" title="Remove"/>
 			</div>
 			<div>
 				<div class="next">
 					<span class="title">Next</span>
-					<a class="torrent" onclick="openLink(this);" bound="true" bind:href="url">{bind:name}</a>
+					<span class="torrentLink" bound="true" bind:href="url">{bind:name}</span>
 				</div>
 				<div class="latest collapsed">
-					<a href="javascript:void(0);" onclick="UI.toggleCls(this.parentNode, 'collapsed');">Latest</a>
+					<span class="toggleLatest">Latest</span>
 					<ul class="torrents">
-						<li class="torrent"><a onclick="openLink(this);" bound="true" bind:href="url">{bind:name}</a></li>
+						<li class="torrent"><span class="torrentLink" bound="true" bind:href="url">{bind:name}</span></li>
 					</ul>
 				</div>
 			</div>
