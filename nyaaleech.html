@@ -1,63 +1,59 @@
 <link rel="stylesheet" type="text/css" href="nyaa.css"/>
 
-<script src="base.js"></script>
+<script src="jquery-1.8.2.min.js"></script>
 <script src="nyaa.js"></script>
+
+<script type="text/template" id="animeTpl">
+	<div class="anime" data-name="${name}">
+		<div class="title">
+			<button class="anidb" title="Open anidb.net">${name}</button>
+			<button class="plusOne" title="Increase episode"/>
+			<button class="edit" title="Edit"/>
+			<button class="up" title="Move up"/>
+			<button class="down" title="Move down"/>
+			<button class="remove" title="Remove"/>
+		</div>
+		<div>
+			<div class="next">
+				<span class="title">Next</span>
+				<ul class="links"></ul>
+			</div>
+			<div class="latest">
+				<button>Latest</button>
+				<ul class="links" style="display: none"></ul>
+			</div>
+		</div>
+	</div>
+</script>
 
 <body>
 	<div>
 		<div class="toolbar">
 			<button class="add" title="New anime"/>
-			<button class="impexp" title="Import / Export"/>
 		</div>
 		
-		<div id="animeForm" class="collapsed" cardScope="head">
+		<div id="animeForm" style="display: none;">
 			<form>
-				<div>
-					<span class="label">Name</span>
-					<input type="text" name="name">
-				</div>
-				<div>
-					<span class="label">Episode</span>
-					<input type="text" name="episode">
-				</div>
-				<div>
-					<span class="label">Filter</span>
-					<input type="text" name="prefs">
-				</div>
-				<div class="buttons">
-					<button class="save" title="Save"/>
-				</div>
+				<table>
+				<tr>
+					<td>Name</td>
+					<td><input type="text" name="name"></td>
+				</tr>
+				<tr>
+					<td>Episode</td>
+					<td><input type="text" name="episode"></td>
+				</tr>
+				<tr>
+					<td>Filter</td>
+					<td><input type="text" name="prefs"></td>
+				</tr>
+				<tr class="buttons">
+					<td colspan="2"><button class="save" title="Save"/></td>
+				</tr>
+				</table>
 			</form>
-		</div>
-		
-		<div id="impexp" class="collapsed" cardScope="head">
-			<textarea></textarea>
-			<button onclick="importJson();">Import</button>
 		</div>
 	</div>
 
-	<div id="animes">
-		<div class="anime" bindScope="anime">
-			<div class="title">
-				<span class="anidb" bound="true" bindScope="anime">{bind:name}</span>
-				<button class="plusOne" title="+1"/>
-				<button class="edit" title="Edit"/>
-				<button class="up" title="Move up"/>
-				<button class="down" title="Move down"/>
-				<button class="remove" title="Remove"/>
-			</div>
-			<div>
-				<div class="next">
-					<span class="title">Next</span>
-					<span class="torrentLink" bound="true" bind:href="url">{bind:name}</span>
-				</div>
-				<div class="latest collapsed">
-					<span class="toggleLatest">Latest</span>
-					<ul class="torrents">
-						<li class="torrent"><span class="torrentLink" bound="true" bind:href="url">{bind:name}</span></li>
-					</ul>
-				</div>
-			</div>
-		</div>
-	</div>
+	<div id="animes"></div>
 </body>

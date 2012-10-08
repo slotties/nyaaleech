@@ -2,66 +2,60 @@ body {
 	min-width: 600px;
 	overflow-x: hidden;
 }
-a { text-decoration: none; }
-a:hover { text-decoration: underline; }
-.collapsed { display: none; }
 
-.title button,
-.toolbar button,
-#animeForm button {
+button {
 	background: no-repeat center center;
 	width: 16px;
 	height: 16px;
 	padding: 0;
 	border: none;
-	margin-left: 8px;
+	margin-right: 8px;	
+	cursor: pointer;
+	padding: 0;
+	margin-left: 0;
 }
-.title .plusOne,
-#animeForm .save { background-image: url('plus1.png'); }
-.title .edit { background-image: url('edit.png'); }
-.title .up { background-image: url('up.png'); }
-.title .down { background-image: url('down.png'); }
-.title .remove { background-image: url('remove.png'); }
-.toolbar .add,
-#animeForm .addFilter {
+
+.add {
 	background-image: url('add.png');
 }
-.toolbar .impexp { background-image: url('impexp.png'); }
 
-.title .anidb {
-	color: #000;
+#animeForm .save,
+.anime .plusOne {
+	background-image: url('plus1.png');
+}
+.anime .edit {
+	background-image: url('edit.png');
+}
+.anime .remove {
+	background-image: url('remove.png');
+}
+.anime .down {
+	background-image: url('down.png');
+}
+.anime .up {
+	background-image: url('up.png');
+}
+
+.anime .anidb {
+	width: auto;
 	font-weight: bold;
-	cursor: pointer;
+}
+.anime {
+	border-top: 1px dashed #ccc;
+	margin-top: 8px;
+}
+.anime .next .links {
+	padding-left: 0;
+	display: inline;
+}
+.anime .next li {
+	display: inline;
+	margin-left: 8px;
 }
 
-.toolbar { margin-bottom: 8px; }
-
-#animeForm { margin-bottom: 8px; }
-#animeForm form .label {
-	width: 80px;
-	display: inline-block;
-	text-align: right;
+.anime .latest button {
+	width: auto;
 }
-#animeForm form input { width: 270px; }
-#animeForm .buttons {
-	width: 356px;
-	height: 16px;
-}
-#animeForm .buttons * { float: right; }
-#animeForm .dupe .label, 
-#animeForm .dupe button {
-	visibility: hidden;
-}
-
-.anime.loading { color: #ccc; }
-.anime { border-top: 1px dashed #000; }
-.anime .next .torrentLink { margin-left: 8px; }
-.anime .next.collapsed,
-.anime .latest.collapsed {
-	display: block; 
-}
-.anime .collapsed .torrents { display: none; }
-.anime .torrents { padding: 0 0 0 40px;}
 
 #impexp textarea {
 	width: 450px;
@@ -72,4 +66,23 @@ a:hover { text-decoration: underline; }
 .torrentLink {
 	color: #00d;
 	cursor: pointer;
+}
+
+.torrent,
+.torrent :visited {
+	color: #00d;
+}
+
+#animeForm {
+	margin-bottom: 8px;
+}
+#animeForm td:first-child {
+	width: 80px;
+	text-align: right;
+}
+#animeForm input {
+	width: 300px;
+}
+#animeForm .buttons * {
+	float: right;
 }
