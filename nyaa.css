@@ -77,10 +77,11 @@ button {
 	margin-bottom: 8px;
 }
 #animeForm td:first-child {
-	width: 80px;
+	width: 120px;
 	text-align: right;
 }
-#animeForm input {
+#animeForm input,
+#animeForm select {
 	width: 300px;
 }
 #animeForm .buttons * {

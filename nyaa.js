@@ -22,7 +22,24 @@ jQuery(document).ready(function() {
 	
 	jQuery('.add').click(create);
 	jQuery('.save').click(save);
+	
+	// FIXME requestAnidb();
 });
+
+function requestAnidb() {	
+	chrome.windows.getCurrent(function(w) {
+		chrome.tabs.getSelected(w.id, function (tabul) {
+            chrome.tabs.sendRequest(tabul.id, { cmd: 'pullAnime' }, function(anime) {
+				showAnimeForm({
+					name: anime.name,
+					episode: 0,
+					groups: anime.groups,
+					group: ''
+				});
+			});
+        });
+    });
+};
 
 /*
  * Actions
@@ -52,16 +69,25 @@ function edit() {
 };
 
 function create() {
-	var anime = { name: '', episode: 0, prefs: [ '' ] };
+	var anime = { name: '', episode: 0, customGroup: '' };
 	showAnimeForm(anime);
 };
 
 function showAnimeForm(anime) {
-	var form = jQuery('#animeForm');
+	var form = jQuery('#animeForm'),
+		select = jQuery('select', form);
 	
 	jQuery('input[name="name"]', form).val(anime.name);
 	jQuery('input[name="episode"]', form).val(anime.episode);
-	jQuery('input[name="prefs"]', form).val(anime.prefs[0]);
+	jQuery('input[name="customGroup"]', form).val(anime.customGroup);
+	
+	jQuery('option', select).remove();
+	select.append('<option value="">none</option>');
+	if (anime.groups) {
+		for (var i = 0; i < anime.groups.length; i++) {
+			select.append('<option value="' + anime.groups[i] + '">' + anime.groups[i] + '</option>');
+		}
+	}
 	
 	form.fadeIn();
 };
@@ -70,19 +96,22 @@ function save() {
 	var form = jQuery('#animeForm'),
 		name = jQuery('input[name="name"]', form).val(),
 		episode = jQuery('input[name="episode"]', form).val(),
-		prefs = jQuery('input[name="prefs"]', form).val(),
+		group = jQuery('[name="group"]', form).val(),
+		customGroup = jQuery('input[name="customGroup"]', form).val(),
 		anime,
 		animes = window.animes;
-			
+	
 	anime = getAnime(name);
 	if (!anime) {
-		anime = animes.push({
+		anime = {
 			name: name
-		});
+		};
+		animes.push(anime);
 	}
 	
 	anime.episode = parseInt(episode, 10);
-	anime.prefs = [ prefs ];
+	anime.group = group;
+	anime.customGroup = customGroup;
 	
 	storeAnimes();
 	window.location.reload();
@@ -192,40 +221,19 @@ function moveAnime(animeName, offset) {
 /*
  * Connector to nyaa.eu
  */
-function parseAnime(item, exp) {
-	var title = item.querySelector('title').firstChild.nodeValue,
-		next = { title: title },
-		m = null;
+function getEpisode(title) {
+	(/\-[ _]([0-9]*).*/g).exec(title);
 	
-	if (exp.prefsFn.length > 0)
-		for (var i = exp.prefsFn.length; i-- && !next.ep; )
-			next.ep = exp.prefsFn[i](title);
-		
-	return next;
-};
-function createGetEpisodeFn(anime) {
-	if (!anime.prefs || anime.prefs.length === 0) {
-		return function() {
-			return -0;
-		};
+	if (RegExp.$1) {
+		return parseInt(RegExp.$1, 10);
+	} else {
+		return 0;
 	}
-
-	var filterStr = anime.prefs[0],
-		epIdx = filterStr.indexOf('??'),
-		plainTitle = filterStr.substring(0, epIdx < 0 ? filterStr.length : epIdx);
-	
-	return function(title) {
-		if (title.indexOf(plainTitle) !== 0) {
-			return null;
-		}
-		
-		return parseInt(title.substring(plainTitle.length, title.length), 10);
-	};
 };
+
 function insertLinks(xmlItems, anime, nextEl, latestEl) {
 	var latestLeft = 15,
-		nextLeft = 3,
-		getEpisode = createGetEpisodeFn(anime);
+		nextLeft = 3;
 		
 	for (var i = 0; i < xmlItems.length && (latestLeft > 0 || nextLeft > 0); i++) {
 		var title = xmlItems[i].querySelector('title').firstChild.nodeValue,
@@ -245,7 +253,7 @@ function insertLinks(xmlItems, anime, nextEl, latestEl) {
 };
 
 function pullLinks(anime, el) {
-	var url = 'http://www.nyaa.eu/?page=rss&cats=1_37&term=' + anime.name
+	var url = 'http://www.nyaa.eu/?page=rss&cats=1_37&term=' + (anime.name + ' ' + (anime.group || anime.customGroup))
 
 	jQuery.get(url, null, function(rsp) {
 		var xmlItems = rsp.getElementsByTagName('item'),
