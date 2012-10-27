@@ -33,7 +33,7 @@ window.nyaaleech = {
 	}
 };
 
-chrome.extension.onRequest.addListener(function(req, sender, rsp) {
+chrome.extension.onMessage.addListener(function(req, sender, rsp) {
 	var anime = {
 		name: nyaaleech.name(),
 		groups: nyaaleech.groups()

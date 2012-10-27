@@ -23,22 +23,24 @@ jQuery(document).ready(function() {
 	jQuery('.add').click(create);
 	jQuery('.save').click(save);
 	
-	// FIXME requestAnidb();
+	requestAnidb();
 });
 
 function requestAnidb() {	
-	chrome.windows.getCurrent(function(w) {
-		chrome.tabs.getSelected(w.id, function (tabul) {
-            chrome.tabs.sendRequest(tabul.id, { cmd: 'pullAnime' }, function(anime) {
-				showAnimeForm({
-					name: anime.name,
-					episode: 0,
-					groups: anime.groups,
-					group: ''
-				});
-			});
-        });
-    });
+	chrome.tabs.getSelected(null, function(tab) {
+		chrome.tabs.sendMessage(tab.id, {greeting: "hello"}, function(anime) {
+			if (anime) {
+				if (!getAnime(anime.name)) {
+					showAnimeForm({
+						name: anime.name,
+						groups: anime.groups,
+						customGroup: '',
+						episode: 0
+					});
+				}
+			}			
+		});
+	});
 };
 
 /*
