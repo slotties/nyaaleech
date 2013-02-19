@@ -66,11 +66,8 @@ var TorrentCtrl = function($scope, $http) {
 				}
 			})
 			.success(function(torrentFeedXmlRoot) {
-				var xmlItems = torrentFeedXmlRoot.getElementsByTagName('item'),
-					latestEl = document.querySelector('.latest .links', el),
-					nextEl = document.querySelector('.next .links', el);
-				
-				insertLinks(xmlItems, anime, nextEl, latestEl);
+				var xmlItems = torrentFeedXmlRoot.getElementsByTagName('item');
+				insertLinks(xmlItems, anime);
 			})
 			.error(function(data) {
 				// FIXME
@@ -130,10 +127,10 @@ var TorrentCtrl = function($scope, $http) {
 		window.location.reload();
 	};
 	
-	// FIXME
 	requestAnidb($scope);
 };
 	
+// FIXME: move into controller
 function getAnimeByName(animes, name) {
 	for (var i = 0; i < animes.length; i++) {
 		if (animes[i].name === name) {
@@ -142,6 +139,7 @@ function getAnimeByName(animes, name) {
 	}
 };
 
+// FIXME: move into controller
 function requestAnidb(scope) {
 	chrome.tabs.getSelected(null, function(tab) {
 		chrome.tabs.sendMessage(tab.id, {greeting: "hello"}, function(anime) {
@@ -162,6 +160,7 @@ function requestAnidb(scope) {
 /*
  * Storage and local data management
  */
+// FIXME: move into controller
 function storeAnimes(animes) {
 	// TODO: use angular.copy?
 	var storedAnimes = [];
@@ -175,6 +174,7 @@ function storeAnimes(animes) {
 	
 	localStorage.setItem('animes', JSON.stringify(storedAnimes));
 };
+// FIXME: move into controller
 function loadAnimes() {
 	var storedData = localStorage.getItem('animes');		
 	if (storedData) {
@@ -191,6 +191,7 @@ function loadAnimes() {
 /*
  * Connector to nyaa.eu
  */
+// FIXME: move into controller
 function getEpisode(title) {
 	(/\-[ _]([0-9]*).*/g).exec(title);
 	
@@ -201,26 +202,23 @@ function getEpisode(title) {
 	}
 };
 
-function insertLinks(xmlItems, anime, nextEl, latestEl) {
-	var latestLeft = 15,
-		nextLeft = 3;
+// FIXME: move into controller
+function insertLinks(xmlItems, anime) {	
+	var nextList = anime.nextLinks,
+		latestList = anime.latestLinks,
+		maxLatest = 15,
+		maxNext = 3;
 		
-	for (var i = 0; i < xmlItems.length && (latestLeft > 0 || nextLeft > 0); i++) {
-		var title = xmlItems[i].querySelector('title').firstChild.nodeValue,
-			url =  xmlItems[i].querySelector('link').firstChild.nodeValue,
-			targetList;
+	for (var i = 0; i < xmlItems.length && nextList.length < maxNext && latestList.length < maxLatest; i++) {
+		var link = {
+			title: xmlItems[i].querySelector('title').firstChild.nodeValue,
+			url: xmlItems[i].querySelector('link').firstChild.nodeValue
+		};			
 			
-		if (nextLeft > 0 && getEpisode(title) > anime.episode) {
-			targetList = anime.nextLinks;
-			nextLeft--;
+		if (nextList.length < maxNext && getEpisode(link.title) > anime.episode) {
+			nextList.push(link);
 		} else {
-			targetList = anime.latestLinks;
-			latestLeft--;
+			latestList.push(link);
 		}
-		
-		targetList.push({
-			title: title,
-			url: url
-		});
 	}
 };
