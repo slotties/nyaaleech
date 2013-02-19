@@ -1,39 +1,155 @@
-jQuery(document).ready(function() {
-	var animes = loadAnimes(),
-		rootEl = jQuery('#animes');
-		
-	window.animes = animes;
-		
-	jQuery.each(animes, function(idx, item) {
-		var html = renderTemplate('animeTpl', item),
-			el;
-				
-		el = jQuery(html).appendTo(rootEl);
-		
-		pullLinks(item, el);
-	});
-	
-	jQuery('.anidb').click(openAnidb);
-	jQuery('.plusOne').click(plusOne);
-	jQuery('.edit').click(edit);
-	jQuery('.remove').click(remove);
-	jQuery('.up').click(moveUp);
-	jQuery('.down').click(moveDown);
-	
-	jQuery('.add').click(create);
-	jQuery('.save').click(save);
-	
-	requestAnidb();
-});
+"use strict";
 
-function requestAnidb() {	
+var TorrentCtrl = function($scope, $http) {
+	var animes = loadAnimes();
+	
+	for (var i = 0; i < animes.length; i++) {
+		animes[i].nextLinks = [];
+		animes[i].latestLinks = [];
+	}
+	
+	$scope.animes = animes;
+	
+	$scope.animeFormObj = {
+		name: '',
+		episode: 2,
+		groups: [],
+		customGroup: ''
+	};
+	
+	/*
+		Actions
+	*/	
+	$scope.openAnidb = function(name) {
+		var url = 'http://anidb.net/perl-bin/animedb.pl?show=animelist&adb.search=' + escape(name) + '&do.search=search';
+		
+		chrome.tabs.update(null, { url: url });		
+	};
+	
+	$scope.move = function(idx, offset) {
+		var animes = $scope.animes;
+		if ((idx + offset) >= 0 && ((idx + offset) < animes.length)) {
+			var curr = animes[idx];
+				
+			animes.splice(idx, 1);
+			animes.splice(idx + offset, 0, curr);
+			
+			storeAnimes($scope.animes);
+		}
+	};
+	
+	$scope.remove = function(idx) {
+		if (confirm('Really?')) {
+			$scope.animes.splice(idx, 1);
+			storeAnimes($scope.animes);
+		}
+	};
+	
+	$scope.plusOne = function(anime) {
+		anime.episode += 1;
+		
+		storeAnimes($scope.animes);
+		window.location.reload();
+	};
+	
+	$scope.pullTorrentList = function(anime) {
+		var url = 'http://www.nyaa.eu/?page=rss&cats=1_37&term=' + (anime.name + ' ' + (anime.group || anime.customGroup)),
+			el = this;
+		
+		$http({
+				method: 'GET',
+				url: url,
+				transformResponse: function(str) {
+					var parser = new DOMParser();
+					
+					return parser.parseFromString(str, 'text/xml');
+				}
+			})
+			.success(function(torrentFeedXmlRoot) {
+				var xmlItems = torrentFeedXmlRoot.getElementsByTagName('item'),
+					latestEl = document.querySelector('.latest .links', el),
+					nextEl = document.querySelector('.next .links', el);
+				
+				insertLinks(xmlItems, anime, nextEl, latestEl);
+			})
+			.error(function(data) {
+				// FIXME
+				console.log(data);
+			});
+	};
+	
+	$scope.toggleLatest = function(event) {
+		var listEl = event.srcElement.parentNode.querySelector('.links');
+		
+		if (listEl.style.display === 'none') {
+			listEl.style.display = '';
+		} else {
+			listEl.style.display = 'none';
+		}
+	};
+	
+	$scope.openTorrent = function(url) {
+		chrome.tabs.update(null, { url: url });
+	};
+	
+	$scope.showAnimeForm = function(data) {
+		var formObj = $scope.animeFormObj;
+		
+		formObj.name = data.name;
+		formObj.episode = data.episode;
+		formObj.customGroup = data.customGroup || data.group;
+		
+		document.getElementById('animeForm').style.display = '';
+	};
+	$scope.editAnime = function(anime) {
+		showAnimeForm(anime);
+	};
+	$scope.createAnime = function() {
+		showAnimeForm({
+			name: '',
+			episode: 0,
+			customGroup: ''
+		});
+	};
+	
+	$scope.saveAnime = function() {
+		var formObj = $scope.animeFormObj,
+			anime = getAnimeByName(animes, formObj.name);
+			
+		if (!anime) {
+			anime = {
+				name: formObj.name
+			};
+			animes.push(anime);
+		}
+		
+		anime.episode = parseInt(formObj.episode, 10);
+		anime.customGroup = formObj.customGroup;
+		
+		storeAnimes($scope.animes);
+		window.location.reload();
+	};
+	
+	// FIXME
+	requestAnidb($scope);
+};
+	
+function getAnimeByName(animes, name) {
+	for (var i = 0; i < animes.length; i++) {
+		if (animes[i].name === name) {
+			return animes[i];
+		}
+	}
+};
+
+function requestAnidb(scope) {
 	chrome.tabs.getSelected(null, function(tab) {
 		chrome.tabs.sendMessage(tab.id, {greeting: "hello"}, function(anime) {
 			if (anime) {
-				if (!getAnime(anime.name)) {
-					showAnimeForm({
+				if (!getAnimeByName(scope.animes, anime.name)) {
+					scope.showAnimeForm({
 						name: anime.name,
-						groups: anime.groups,
+						// FIXME: re-support this feature groups: anime.groups,
 						customGroup: '',
 						episode: 0
 					});
@@ -44,129 +160,20 @@ function requestAnidb() {
 };
 
 /*
- * Actions
- */
-function openTorrent() {
-	chrome.tabs.update(null, { url: this.dataset.url });
-};
-function openAnidb() {
-	var name = resolveAnimeName(this),
-		url = 'http://anidb.net/perl-bin/animedb.pl?show=animelist&adb.search=' + escape(name) + '&do.search=search';
-		
-	chrome.tabs.update(null, { url: url });
-};
-
-function plusOne() {
-	var anime = getAnime(this);
-		
-	anime.episode += 1;	
-	
-	storeAnimes();
-	window.location.reload();
-};
-
-function edit() {
-	var anime = getAnime(this);		
-	showAnimeForm(anime);
-};
-
-function create() {
-	var anime = { name: '', episode: 0, customGroup: '' };
-	showAnimeForm(anime);
-};
-
-function showAnimeForm(anime) {
-	var form = jQuery('#animeForm'),
-		select = jQuery('select', form);
-	
-	jQuery('input[name="name"]', form).val(anime.name);
-	jQuery('input[name="episode"]', form).val(anime.episode);
-	jQuery('input[name="customGroup"]', form).val(anime.customGroup);
-	
-	jQuery('option', select).remove();
-	select.append('<option value="">none</option>');
-	if (anime.groups) {
-		for (var i = 0; i < anime.groups.length; i++) {
-			select.append('<option value="' + anime.groups[i] + '">' + anime.groups[i] + '</option>');
-		}
-	}
-	
-	form.fadeIn();
-};
-
-function save() {
-	var form = jQuery('#animeForm'),
-		name = jQuery('input[name="name"]', form).val(),
-		episode = jQuery('input[name="episode"]', form).val(),
-		group = jQuery('[name="group"]', form).val(),
-		customGroup = jQuery('input[name="customGroup"]', form).val(),
-		anime,
-		animes = window.animes;
-	
-	anime = getAnime(name);
-	if (!anime) {
-		anime = {
-			name: name
-		};
-		animes.push(anime);
-	}
-	
-	anime.episode = parseInt(episode, 10);
-	anime.group = group;
-	anime.customGroup = customGroup;
-	
-	storeAnimes();
-	window.location.reload();
-	
-	return false;
-};
-
-function remove() {
-	if (!confirm('Really?'))
-		return;
-
-	var animeName = resolveAnimeName(this),
-		idx = indexOfAnime(animeName);
-		
-	window.animes.splice(idx, 1);	
-	storeAnimes();
-	
-	jQuery(this).parents('.anime').remove();
-};
-
-function moveUp() {
-	var anime = resolveAnimeName(this);	
-	moveAnime(anime, -1);
-};
-
-function moveDown() {
-	var anime = resolveAnimeName(this);	
-	moveAnime(anime, 1);
-};
-
-function toggleLatest() {
-	jQuery(this).next('ul').fadeToggle();
-};
-
-/*
- * Rendering
- */
-function renderTemplate(tplId, data) {
-	var tplMarkup = document.getElementById(tplId),
-		rendered;
-		
-	rendered = tplMarkup.innerHTML.replace(/\$\{([a-zA-Z]*)\}/g, function(match, field) {
-		return data[field];
-	});
-		
-	return rendered;
-};
-
-/*
  * Storage and local data management
  */
-function storeAnimes() {
-	localStorage.setItem('animes', JSON.stringify(window.animes));
+function storeAnimes(animes) {
+	// TODO: use angular.copy?
+	var storedAnimes = [];
+	for (var i = 0; i < animes.length; i++) {
+		storedAnimes.push({
+			name: animes[i].name,
+			episode: animes[i].episode,
+			customGroup: animes[i].customGroup
+		});
+	}
+	
+	localStorage.setItem('animes', JSON.stringify(storedAnimes));
 };
 function loadAnimes() {
 	var storedData = localStorage.getItem('animes');		
@@ -179,45 +186,6 @@ function loadAnimes() {
 	}
 	
 	return [];
-};
-
-function resolveAnimeName(el) {
-	return jQuery(el).parents('.anime')[0].dataset.name;
-};
-
-function getAnime(name) {
-	if (typeof(name) !== 'string') {
-		// Must be a DOM node then
-		name = resolveAnimeName(name);
-	}
-
-	return jQuery.grep(window.animes, function(item) {
-		return name === item.name;
-	})[0];
-};
-
-function indexOfAnime(name) {
-	for (var i = 0; i < window.animes.length; i++) {
-		if (name === window.animes[i].name) {
-			return i;
-		}
-	}
-	
-	return -1;
-};
-
-function moveAnime(animeName, offset) {
-	var idx = indexOfAnime(animeName);
-	
-	if ((idx + offset) >= 0 && ((idx + offset) < window.animes.length)) {
-		var curr = window.animes[idx];
-			
-		window.animes.splice(idx, 1);
-		window.animes.splice(idx + offset, 0, curr);
-	
-		storeAnimes();	
-		window.location.reload();
-	}
 };
 
 /*
@@ -240,30 +208,19 @@ function insertLinks(xmlItems, anime, nextEl, latestEl) {
 	for (var i = 0; i < xmlItems.length && (latestLeft > 0 || nextLeft > 0); i++) {
 		var title = xmlItems[i].querySelector('title').firstChild.nodeValue,
 			url =  xmlItems[i].querySelector('link').firstChild.nodeValue,
-			targetEl;
+			targetList;
 			
 		if (nextLeft > 0 && getEpisode(title) > anime.episode) {
-			targetEl = nextEl;
+			targetList = anime.nextLinks;
 			nextLeft--;
 		} else {
-			targetEl = latestEl;
+			targetList = anime.latestLinks;
 			latestLeft--;
 		}
 		
-		targetEl.append('<li><a class="torrent" href="#" data-url="' + url + '">' + title + '</a></li>');
+		targetList.push({
+			title: title,
+			url: url
+		});
 	}
-};
-
-function pullLinks(anime, el) {
-	var url = 'http://www.nyaa.eu/?page=rss&cats=1_37&term=' + (anime.name + ' ' + (anime.group || anime.customGroup))
-
-	jQuery.get(url, null, function(rsp) {
-		var xmlItems = rsp.getElementsByTagName('item'),
-			latestEl = jQuery('.latest .links', el),
-			nextEl = jQuery('.next .links', el);
-		
-		insertLinks(xmlItems, anime, nextEl, latestEl);
-		jQuery('.torrent', el).click(openTorrent);
-		jQuery('.latest button', el).click(toggleLatest);
-	});
 };

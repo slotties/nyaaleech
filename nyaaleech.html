@@ -1,63 +1,82 @@
-<link rel="stylesheet" type="text/css" href="nyaa.css"/>
+<!doctype html>
+<html ng-app ng-csp>
+	<head>
+		<link rel="stylesheet" type="text/css" href="nyaa.css"/>
 
-<script src="jquery-1.8.2.min.js"></script>
-<script src="nyaa.js"></script>
-
-<script type="text/template" id="animeTpl">
-	<div class="anime" data-name="${name}">
-		<div class="title">
-			<button class="anidb" title="Open anidb.net">${name}</button>
-			<button class="plusOne" title="Increase episode"/>
-			<button class="edit" title="Edit"/>
-			<button class="up" title="Move up"/>
-			<button class="down" title="Move down"/>
-			<button class="remove" title="Remove"/>
-		</div>
+		<script src="angular-1.0.4.min.js"></script>
+		<script src="nyaa.js"></script>
+	</head>
+	<body ng-controller="TorrentCtrl">
 		<div>
-			<div class="next">
-				<span class="title">Next</span>
-				<ul class="links"></ul>
+			<div class="toolbar">
+				<button class="add" title="New anime" ng-click="createAnime()"/>
 			</div>
-			<div class="latest">
-				<button>Latest</button>
-				<ul class="links" style="display: none"></ul>
+			
+			<div id="animeForm" style="display: none;">
+				<form>
+					<table>
+					<tr>
+						<td>Name</td>
+						<td><input type="text" name="name" ng-model="animeFormObj.name"></td>
+					</tr>
+					<tr>
+						<td>Episode</td>
+						<td><input type="text" name="episode" ng-model="animeFormObj.episode"></td>
+					</tr>
+					<!-- FIXME: think about a different way to implement this.
+					<tr>
+						<td>Group</td>
+						<td>
+							<select name="group" ng-model="animeFormObj.groups" ng-options="i.name for i in animeFormObj.groups">
+								<option value="">None</option>
+							</select>
+						</td>
+					</tr>
+					-->
+					
+					<tr>
+						<td>Custom group</td>
+						<td><input type="text" name="customGroup" ng-model="animeFormObj.customGroup"></td>
+					</tr>
+					<tr class="buttons">
+						<td colspan="2">
+							<button class="save" title="Save" ng-click="saveAnime()"/>
+						</td>
+					</tr>
+					</table>
+				</form>
 			</div>
 		</div>
-	</div>
-</script>
 
-<body>
-	<div>
-		<div class="toolbar">
-			<button class="add" title="New anime"/>
+		<div id="animes">
+			<div class="anime" ng-repeat="anime in animes" ng-init="pullTorrentList(anime);">
+				<div class="title">
+					<button class="anidb" title="Open anidb.net" ng-click="openAnidb(anime.name)">{{anime.name}}</button>
+					<button class="plusOne" title="Increase episode" ng-click="plusOne(anime)"/>
+					<button class="edit" title="Edit" ng-click="editAnime(anime)"/>
+					<button class="up" title="Move up" ng-click="move($index, -1)"/>
+					<button class="down" title="Move down" ng-click="move($index, 1)"/>
+					<button class="remove" title="Remove" ng-click="remove($index)"/>
+				</div>
+				<div>
+					<div class="next">
+						<span class="title">Next</span>
+						<ul class="links">
+							<li ng-repeat="link in anime.nextLinks">
+								<a class="torrent" href="#" ng-click="openTorrent(link.url)">{{link.title}}</a>
+							</li>
+						</ul>
+					</div>
+					<div class="latest">
+						<button ng-click="toggleLatest($event)">Latest</button>
+						<ul class="links" style="display: none">
+							<li ng-repeat="link in anime.latestLinks">
+								<a class="torrent" href="#" ng-click="openTorrent(link.url)">{{link.title}}</a>
+							</li>
+						</ul>
+					</div>
+				</div>
+			</div>
 		</div>
-		
-		<div id="animeForm" style="display: none;">
-			<form>
-				<table>
-				<tr>
-					<td>Name</td>
-					<td><input type="text" name="name"></td>
-				</tr>
-				<tr>
-					<td>Episode</td>
-					<td><input type="text" name="episode"></td>
-				</tr>
-				<tr>
-					<td>Group</td>
-					<td><select name="group"></td>
-				</tr>
-				<tr>
-					<td>Custom group</td>
-					<td><input type="text" name="customGroup"></td>
-				</tr>
-				<tr class="buttons">
-					<td colspan="2"><button class="save" title="Save"/></td>
-				</tr>
-				</table>
-			</form>
-		</div>
-	</div>
-
-	<div id="animes"></div>
-</body>
+	</body>
+</html>
