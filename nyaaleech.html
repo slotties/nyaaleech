@@ -1,18 +1,18 @@
 <!doctype html>
-<html ng-app ng-csp>
+<html ng-app="nyaaleech" ng-csp>
 	<head>
 		<link rel="stylesheet" type="text/css" href="nyaa.css"/>
 
 		<script src="angular-1.0.4.min.js"></script>
 		<script src="nyaa.js"></script>
 	</head>
-	<body ng-controller="TorrentCtrl">
+	<body ng-controller="NyaaCtrl">
 		<div>
 			<div class="toolbar">
 				<button class="add" title="New anime" ng-click="createAnime()"/>
 			</div>
 			
-			<div id="animeForm" style="display: none;">
+			<div id="animeForm" style="display: none;" ng-controller="EditAnime">
 				<form>
 					<table>
 					<tr>
@@ -48,12 +48,12 @@
 			</div>
 		</div>
 
-		<div id="animes">
+		<div id="animes" ng-controller="AnimeManager">
 			<div class="anime" ng-repeat="anime in animes" ng-init="pullTorrentList(anime);">
 				<div class="title">
 					<button class="anidb" title="Open anidb.net" ng-click="openAnidb(anime.name)">{{anime.name}}</button>
 					<button class="plusOne" title="Increase episode" ng-click="plusOne(anime)"/>
-					<button class="edit" title="Edit" ng-click="editAnime(anime)"/>
+					<button class="edit" title="Edit" ng-click="showAnimeForm(anime)"/>
 					<button class="up" title="Move up" ng-click="move($index, -1)"/>
 					<button class="down" title="Move down" ng-click="move($index, 1)"/>
 					<button class="remove" title="Remove" ng-click="remove($index)"/>
