@@ -1,6 +1,8 @@
 body {
 	min-width: 600px;
 	overflow-x: hidden;
+	font: 13px arial;
+	line-height: 18px;
 }
 
 button {
@@ -9,7 +11,7 @@ button {
 	height: 16px;
 	padding: 0;
 	border: none;
-	margin-right: 8px;	
+	margin-right: 16px;	
 	cursor: pointer;
 	padding: 0;
 	margin-left: 0;
@@ -41,7 +43,7 @@ button {
 	font-weight: bold;
 }
 .anime {
-	border-top: 1px dashed #ccc;
+	padding-top: 4px;
 	margin-top: 8px;
 }
 .anime .next .links {
@@ -51,6 +53,19 @@ button {
 .anime .next li {
 	display: inline;
 	margin-left: 8px;
+}
+
+.anime .title {
+	background-color: #eee;
+	padding: 2px 0px 2px 2px;
+}
+.anime .title a:first-child {
+	width: 150px;
+	text-align: left;
+	display: inline-block;
+	color: #000;
+	font-style: normal;
+	text-decoration: none;
 }
 
 .anime .latest button {

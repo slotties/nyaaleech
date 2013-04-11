@@ -51,7 +51,7 @@
 		<div id="animes" ng-controller="AnimeManager">
 			<div class="anime" ng-repeat="anime in animes" ng-init="pullTorrentList(anime);">
 				<div class="title">
-					<button class="anidb" title="Open anidb.net" ng-click="openAnidb(anime.name)">{{anime.name}}</button>
+					<a href="javascript:void(0);" class="anidb" title="Open anidb.net" ng-click="openAnidb(anime.name)">{{anime.name}}</a>
 					<button class="plusOne" title="Increase episode" ng-click="plusOne(anime)"/>
 					<button class="edit" title="Edit" ng-click="showAnimeForm(anime)"/>
 					<button class="up" title="Move up" ng-click="move($index, -1)"/>
@@ -60,7 +60,7 @@
 				</div>
 				<div>
 					<div class="next">
-						<span class="title">Next</span>
+						<span>New</span>
 						<ul class="links">
 							<li ng-repeat="link in anime.nextLinks">
 								<a class="torrent" href="#" ng-click="openTorrent(link.url)">{{link.title}}</a>
@@ -68,7 +68,7 @@
 						</ul>
 					</div>
 					<div class="latest">
-						<button ng-click="toggleLatest($event)">Latest</button>
+						<button ng-click="toggleLatest($event)">Archive</button>
 						<ul class="links" style="display: none">
 							<li ng-repeat="link in anime.latestLinks">
 								<a class="torrent" href="#" ng-click="openTorrent(link.url)">{{link.title}}</a>
