@@ -1,6 +1,6 @@
 "use strict";
 
-var nyaaModule = angular.module('nyaaleech', []);
+var nyaaModule = angular.module('nyaaleech', [ 'dragdrop' ]);
 nyaaModule.factory('nyaaService', function($http) {
 	return {
 		queryTorrents: function(anime, fn) {
@@ -73,6 +73,14 @@ nyaaModule.factory('nyaaService', function($http) {
 					}
 				});
 			});
+		},
+		
+		getAnimeByName: function(animes, name) {
+			for (var i = 0; i < animes.length; i++) {
+				if (animes[i].name === name) {
+					return animes[i];
+				}
+			}
 		}
 	}
 });
@@ -121,21 +129,6 @@ var AnimeManager = function($scope, nyaaService) {
 	};
 	
 	/*
-		Moves an anime (identified by its index) using an offset.
-	*/
-	$scope.move = function(idx, offset) {
-		var animes = $scope.animes;
-		if ((idx + offset) >= 0 && ((idx + offset) < animes.length)) {
-			var curr = animes[idx];
-				
-			animes.splice(idx, 1);
-			animes.splice(idx + offset, 0, curr);
-			
-			nyaaService.storeAnimes($scope.animes);
-		}
-	};
-	
-	/*
 		Removes an anime (identified by its index).
 	*/
 	$scope.remove = function(idx) {
@@ -159,7 +152,7 @@ var AnimeManager = function($scope, nyaaService) {
 		Pulls the torrents for a specific anime from nyaa.eu and appends the links 
 		to anime.nextLinks and anime.latestLinks.
 	*/
-	$scope.pullTorrentList = function(anime) {
+	$scope.initAnime = function(anime) {	
 		nyaaService.queryTorrents(anime, function(links) {
 			var nextList = anime.nextLinks,
 				latestList = anime.latestLinks,
@@ -179,7 +172,7 @@ var AnimeManager = function($scope, nyaaService) {
 				var link = {
 					title: links[i].querySelector('title').firstChild.nodeValue,
 					url: links[i].querySelector('link').firstChild.nodeValue
-				};			
+				};
 				
 				if (nextList.length < maxNext && scanEpisode(link.title) > anime.episode) {
 					nextList.push(link);
@@ -203,20 +196,30 @@ var AnimeManager = function($scope, nyaaService) {
 	$scope.openTorrent = function(url) {
 		chrome.tabs.update(null, { url: url });
 	};
-};
-
-var EditAnime = function($scope, nyaaService) {	
-	var getAnimeByName = function(animes, name) {
-		for (var i = 0; i < animes.length; i++) {
-			if (animes[i].name === name) {
-				return animes[i];
-			}
+	
+	$scope.onAnimeDrop = function(draggedItem, droppedItem) {
+		var animes = $scope.animes,
+			dragIdx, dropIdx;
+		
+		draggedItem = nyaaService.getAnimeByName($scope.animes, draggedItem.name);
+		
+		if (draggedItem && droppedItem && draggedItem !== droppedItem) {
+			dragIdx = animes.indexOf(draggedItem);
+			animes.splice(dragIdx, 1);
+			
+			dropIdx =  animes.indexOf(droppedItem);
+			animes.splice(dropIdx, 0, draggedItem);
+			
+			nyaaService.storeAnimes(animes);
+			window.location.reload();
 		}
 	};
-	
+};
+
+var EditAnime = function($scope, nyaaService) {		
 	$scope.saveAnime = function() {
 		var formObj = $scope.animeFormObj,
-			anime = getAnimeByName($scope.animes, formObj.name);
+			anime = nyaaService.getAnimeByName($scope.animes, formObj.name);
 		
 		if (!anime) {
 			anime = {

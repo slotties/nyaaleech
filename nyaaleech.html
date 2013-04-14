@@ -4,6 +4,7 @@
 		<link rel="stylesheet" type="text/css" href="nyaa.css"/>
 
 		<script src="angular-1.0.6.min.js"></script>
+		<script src="angular-dragdrop.js"></script>
 		<script src="nyaa.js"></script>
 	</head>
 	<body ng-controller="NyaaCtrl">
@@ -48,15 +49,15 @@
 			</div>
 		</div>
 
-		<div id="animes" ng-controller="AnimeManager">
-			<div class="anime" ng-repeat="anime in animes" ng-init="pullTorrentList(anime);">
+		<div id="animes" ng-controller="AnimeManager" ng-dropzone ng-drop-handler="onAnimeDrop">
+			<div class="anime" ng-repeat="anime in animes" ng-init="initAnime(anime);" ng-dd-item="anime">
 				<div class="title">
-					<a href="javascript:void(0);" class="anidb" title="Open anidb.net" ng-click="openAnidb(anime.name)">{{anime.name}}</a>
-					<button class="plusOne" title="Increase episode" ng-click="plusOne(anime)"/>
-					<button class="edit" title="Edit" ng-click="showAnimeForm(anime)"/>
-					<button class="up" title="Move up" ng-click="move($index, -1)"/>
-					<button class="down" title="Move down" ng-click="move($index, 1)"/>
-					<button class="remove" title="Remove" ng-click="remove($index)"/>
+					<a href="javascript:void(0);" class="anidb" title="Open anidb.net" ng-click="openAnidb(anime.name)" ng-drag-handle>
+						{{anime.name}}
+					</a>
+					<button class="plusOne" title="Increase episode" ng-click="plusOne(anime)">
+					<button class="edit" title="Edit" ng-click="showAnimeForm(anime)">
+					<button class="remove" title="Remove" ng-click="remove($index)">
 				</div>
 				<div>
 					<div class="next">

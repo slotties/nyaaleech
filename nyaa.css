@@ -22,20 +22,14 @@ button {
 }
 
 #animeForm .save,
-.anime .plusOne {
+.anime .title:hover .plusOne {
 	background-image: url('plus1.png');
 }
-.anime .edit {
+.anime .title:hover .edit {
 	background-image: url('edit.png');
 }
-.anime .remove {
+.anime .title:hover .remove {
 	background-image: url('remove.png');
-}
-.anime .down {
-	background-image: url('down.png');
-}
-.anime .up {
-	background-image: url('up.png');
 }
 
 .anime .anidb {
@@ -59,13 +53,14 @@ button {
 	background-color: #eee;
 	padding: 2px 0px 2px 2px;
 }
-.anime .title a:first-child {
+.anime .title a {
 	width: 150px;
 	text-align: left;
 	display: inline-block;
 	color: #000;
 	font-style: normal;
 	text-decoration: none;
+	cursor: move;
 }
 
 .anime .latest button {
@@ -101,4 +96,8 @@ button {
 }
 #animeForm .buttons * {
 	float: right;
+}
+
+.ng-dropBefore {
+	border-top: 1px solid #0f0;
 }
