@@ -113,7 +113,6 @@ var NyaaCtrl = function($scope, nyaaService) {
 	};
 	
 	nyaaService.requestAnimeFromCurrentPage(function(anime) {
-		console.log(anime);
 		$scope.showAnimeForm(anime);
 	});
 };
