@@ -9,7 +9,9 @@
 		"default_popup": "nyaaleech.html"
 	},
 	"permissions": [
-		"http://www.nyaa.eu/", "tabs"
+		"http://www.nyaa.eu/",
+		"http://www.nyaa.se/",
+		"tabs"
 	],
 	"content_scripts": [
 		{
