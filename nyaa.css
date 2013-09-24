@@ -39,6 +39,7 @@ button {
 .anime {
 	padding-top: 4px;
 	margin-top: 8px;
+	border-top: 1px solid transparent;
 }
 .anime .next .links {
 	padding-left: 0;
@@ -99,5 +100,5 @@ button {
 }
 
 .ng-dropBefore {
-	border-top: 1px solid #0f0;
+	border-top-color: #88cc88;
 }
