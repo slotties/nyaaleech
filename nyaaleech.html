@@ -36,7 +36,7 @@
 					-->
 					
 					<tr>
-						<td>Custom group</td>
+						<td>Group</td>
 						<td><input type="text" name="customGroup" ng-model="animeFormObj.customGroup"></td>
 					</tr>
 					<tr class="buttons">
@@ -69,7 +69,7 @@
 						</ul>
 					</div>
 					<div class="latest">
-						<button ng-click="toggleLatest($event)">Archive</button>
+						<button class="collapsed latestBtn" ng-click="toggleLatest($event)">Archive</button>
 						<ul class="links" style="display: none">
 							<li ng-repeat="link in anime.latestLinks">
 								<a class="torrent" href="#" ng-click="openTorrent(link.url)">{{link.title}}</a>

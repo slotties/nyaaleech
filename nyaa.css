@@ -102,3 +102,12 @@ button {
 .ng-dropBefore {
 	border-top-color: #88cc88;
 }
+
+.latestBtn.collapsed {
+	padding-right: 18px;
+	background: url('expand.png') right center no-repeat;
+}
+.latestBtn.expanded{
+	padding-right: 18px;
+	background: url('collapse.png') right center no-repeat;
+}

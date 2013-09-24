@@ -187,8 +187,12 @@ var AnimeManager = function($scope, nyaaService) {
 		
 		if (listEl.style.display === 'none') {
 			listEl.style.display = '';
+			event.srcElement.classList.add('expanded');
+			event.srcElement.classList.remove('collapsed');
 		} else {
 			listEl.style.display = 'none';
+			event.srcElement.classList.remove('expanded');
+			event.srcElement.classList.add('collapsed');
 		}
 	};
 	
